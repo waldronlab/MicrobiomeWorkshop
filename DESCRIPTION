@@ -1,0 +1,28 @@
+Package: MicrobiomeWorkshop
+Title: A workshop on microbiome data analysis in Bioconductor
+Description: This workshop covers databases and tools for accessing and analysing
+microbiome data in Bioconductor. It was first developed for Bioc2017.
+Version: 0.1
+Depends:
+  Biobase (>2.37),
+  curatedMetagenomicData (>=1.5.8),
+  phyloseq,
+  metagenomeSeq,
+  metavizr,
+  dada2
+Suggests:
+  knitr,
+  rmarkdown
+Author:
+  Edoardo Pasolli,
+  Lucas Schiffer,
+  Nicola Segata,
+  Susan Holmes,
+  Paul J. McMurdie II,
+  Joseph Nathaniel Paulson,
+  Justin Wagner,
+  Levi Waldron
+Maintainer: The Bioconductor Microbiome Special Interest Group
+Depends: R (>= 3.4.0)
+License: CC BY-SA 4.0
+LazyData: true
