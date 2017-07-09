@@ -14,12 +14,12 @@ Suggests:
   knitr,
   rmarkdown
 Author:
-  Edoardo Pasolli,
-  Lucas Schiffer,
-  Nicola Segata,
   Susan Holmes,
+  Edoardo Pasolli,
   Paul J. McMurdie II,
   Joseph Nathaniel Paulson,
+  Lucas Schiffer,
+  Nicola Segata,
   Justin Wagner,
   Levi Waldron
 Maintainer: The Bioconductor Microbiome Special Interest Group
