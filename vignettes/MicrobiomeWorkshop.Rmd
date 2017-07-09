@@ -127,7 +127,24 @@ exprs( loman.eset )[1:6, 1:5]  #first 6 rows and 5 columns
 
 Bioconductor provides further documentation of the ExpressionSet class and has published an excellent [introduction](https://tinyurl.com/ExpressionSetIntro).
 
-## E. coli prevalence
+## Creating `phyloseq` and `metagenomeSeq` objects
+
+`curatedMetagenomicData` provides convenience functions for converting its *ExpressionSet* objects to *phyloseq::phyloseq* and *metagenomeSeq:MRExperiment* class objects for downstream analysis. For example, to convert the **loman.eset** object to these two classes:
+
+```{r}
+ExpressionSet2phyloseq(loman.eset)
+ExpressionSet2MRexperiment(loman.eset)
+```
+
+This also works on the merged **eset** object from above:
+
+```{r}
+ExpressionSet2phyloseq(eset)
+ExpressionSet2MRexperiment(eset)
+```
+
+
+## Exploratory analysis of E. coli prevalence
 
 Here's a direct, exploratory analysis of *E. coli* prevalence in the Loman dataset using the `ExpressionSet` object. More elegant solutions will be provided later using subsetting methods provided by the `r BiocStyle::Biocpkg("phyloseq")` package, but for users familiar with `grep()` and the `ExpressionSet` object, such manual methods may suffice.
 
