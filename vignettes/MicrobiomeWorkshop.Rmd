@@ -22,9 +22,9 @@ knitr::opts_chunk$set(cache = TRUE)
 
 
 ```{r NeededPackages}
-cranpkgs=c("ggplot2","devtools","adaptivGPCA","treelapse", "structSSI", "vegan", "phangorn")
-BioCpkgs=c("dada2", "curatedMetagenomicData", "phyloseq", "DECIPHER")
-ghpkgs= c("treeDA", "treelapse","metavizr")
+cranpkgs=c("ggplot2","devtools","vegan")
+BioCpkgs=c( "curatedMetagenomicData", "phyloseq")
+ghpkgs= c("metavizr")
 
 instp <-  cranpkgs %in% installed.packages()
 if(any(!instp)) {
@@ -38,10 +38,7 @@ if(any(!instp)) {
 
 ## Check for github packages
 #instp <- ghpkgs %in% installed.packages()
-if(!("treeDA"  %in% installed.packages()))
-   devtools::install_github("jfukuyama/treeDA", dependencies = TRUE)
-if(!("treelapse"  %in% installed.packages()))
-  devtools::install_github("krisrs1128/treelapse", dependencies = TRUE)
+
 if(!("metavizr"  %in% installed.packages()))
 devtools::install_github("epiviz/metavizr", build_vignettes = TRUE)
 
