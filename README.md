@@ -1,3 +1,5 @@
+[![Travis-CI Build Status](https://travis-ci.org/waldronlab/MicrobiomeWorkshop.svg?branch=master)](https://travis-ci.org/waldronlab/MicrobiomeWorkshop)
+
 # A workshop on microbiome data analysis in Bioconductor
 
 Bioconductor provides significant resources for microbiome data acquisition, analysis, and visualization. This workshop introduces `curatedMetagenomicData`, a resource providing uniformly processed taxonomic and metabolic functional profiles for more than 5,000 whole metagenome shotgun sequencing samples from 26 publicly available studies, including the Human Microbiome Project, along with curated participant data. It demonstrates analysis of these data using the `dada2`, `phyloseq`, `treeDA`, `adaptiveGPCA` and `metagenomeSeq` packages for denoising, estimating differential abundance, alpha and beta diversities, ordinations, and other aspects of microbiome data analysis.
