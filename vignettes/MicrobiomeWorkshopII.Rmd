@@ -1,22 +1,27 @@
 ---
 title: "MicrobiomeWorkshopII.Rmd"
-abstract:>
-The second part of the workshop  demonstrates how to use `dada2` on raw reads,
-and analysis of these data using the `phyloseq`, `treeDA`, `adaptiveGPCA` packages for denoising, estimating differential abundance, ordinations.
-The `treelapse` and  `metavizr` packages allow browsing and interactive visualization of microbiome profiles. Together, these packages provide easily linked components for data acquisition and flexible analysis of 16S rRNA and whole metagenome shotgun microbiome profiles. At the end of this workshop, users will be able to access publicly available metagenomic data and to perform common statistical analyses of these and other data in Bioconductor.
-author: "Susan Holmes"
+abstract: >
+ The second part of the workshop  demonstrates how to use `dada2` on raw reads, and analysis of these data using the `phyloseq`, `treeDA`, `adaptiveGPCA` packages for denoising, estimating differential abundance, ordinations. The `treelapse` and  `metavizr` packages allow browsing and interactive visualization of microbiome profiles. Together, these packages provide easily linked components for data acquisition and flexible analysis of 16S rRNA and whole metagenome shotgun microbiome profiles. At the end of this workshop, users will be able to access publicly available metagenomic data and to perform common statistical analyses of these and other data in Bioconductor.
+author: "Susan Holmes and Joey McMurdie"
 date: "July 17, 2017"
 output: 
-   BiocStyle::html_document
+    BiocStyle::html_document
 vignette: >
     %\VignetteIndexEntry{MicrobiomeWorkshopII}
     %\VignetteEngine{knitr::rmarkdown}
     %\VignetteEncoding{UTF-8}
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+
+
 ```{r NeededPackages}
-cranpkgs=c("ggplot2","devtools","adaptivGPCA","treelapse", "structSSI", "vegan", "phangorn")
-BioCpkgs=c("dada2", "curatedMetagenomicData", "phyloseq", "DECIPHER")
+cranpkgs=c("ggplot2","devtools","adaptivGPCA","treelapse", "ade4","structSSI", "PMA","vegan", "ggrepel")
+BioCpkgs=c("dada2", "curatedMetagenomicData", "phyloseq", "DECIPHER","genefilter")
 ghpkgs= c("treeDA", "treelapse","metavizr")
 instp <-  cranpkgs %in% installed.packages()
 if(any(!instp)) {
@@ -34,8 +39,8 @@ if(!("treeDA"  %in% installed.packages()))
    devtools::install_github("jfukuyama/treeDA", dependencies = TRUE)
 if(!("treelapse"  %in% installed.packages()))
   devtools::install_github("krisrs1128/treelapse", dependencies = TRUE)
-if(!("metavizr"  %in% installed.packages()))
-devtools::install_github("epiviz/metavizr", build_vignettes = TRUE)
+#if(!("metavizr"  %in% installed.packages()))
+#devtools::install_github("epiviz/metavizr", build_vignettes = TRUE)
 
 sapply(c(cranpkgs, BioCpkgs, ghpkgs), require, character.only = TRUE)
 
@@ -45,75 +50,66 @@ sapply(c(cranpkgs, BioCpkgs, ghpkgs), require, character.only = TRUE)
 
 # dada2 theory
 
-CLustering using frequencies not just distances.
+Clustering using frequencies not just distances.
+
+
 
 # dada2 tutorial
 
 [See tutorial here](https://benjjneb.github.io/dada2/tutorial.html)
 
+# dada2 with Shiny
 
 ## Components of a phyloseq object
 
-This  `r BiocStyle::Biocpkg("phyloseq")` objects contain 3 components, with extractor functions hinted at by its show method:
+This  `r BiocStyle::Biocpkg("phyloseq")` objects contain 3 components, with extractor functions hinted at by its show method, we'll download the data generated with dada2 from
+BioC workflow paper:
 
 ```{r}
-loman.pseq
+download.file("https://cdn.rawgit.com/spholmes/F1000_workflow/891463f6/data/ps.rds",
+              "ps.rds",
+              mode="wb")
+ps = readRDS("ps.rds")
+ps
 ```
 
-`otu_table()` returns the same thing as `exprs( loman.eset )` did, the Operational Taxanomic Unit (OTU) table. Here are the first 6 rows and 5 columns:
+
 
 ```{r, warning=FALSE}
-otu_table( loman.pseq )[1:6, 1:5]
+otu_table(ps)[1:6, 1:5]
 ```
 
-The same patient or participant data that was available from  `pData( loman.eset )` is now availble using `sample_data()` on 
-the `r BiocStyle::Biocpkg("phyloseq")` object:
-
-```{r, warning=FALSE}
-sample_data( loman.pseq )[1:6, 1:5]
-```
 
 But this object also is aware of the taxonomic structure, which will enable the powerful subsetting methods of the `r BiocStyle::Biocpkg("phyloseq")` package.
 
 ```{r, warning=FALSE}
-head( tax_table( loman.pseq ) )
+head( tax_table( ps ) )
 ```
+
+Before doing the multivariate projections, we will do some basic preprocessing. First remove features with ambiguous Phylum annotation:
+
+```{r}
+ps = subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
+```
+
 
 ## Subsetting / Pruning
 
 The process of subsetting begins with the names of phylogenetic ranks:
 
-```{r, warning=FALSE}
-rank_names( loman.pseq )
+```{r, warning=FALSE,eval=FALSE}
+rank_names(ps )
 ```
 
-Taxa can be filtered by these rank names. For example, to return an object with only species and strains:
-
-```{r, warning=FALSE}
-subset_taxa( loman.pseq, !is.na(Species))
-```
-
-To keep only phylum-level data (not class or finer, and not kingdom-level):
-
-```{r}
-subset_taxa( loman.pseq, is.na(Class) & !is.na(Phylum))
-```
-
-Or to keep only Bacteroidetes phylum. Note that taxa names have been shortened from the rownames of the `ExpressionSet` object, for nicer plotting.
-
-```{r}
-loman.bd = subset_taxa( loman.pseq, Phylum == "Bacteroidetes")
-head( taxa_names( loman.bd ) )
-```
 
 ## Advanced Pruning
 
 The `r BiocStyle::Biocpkg("phyloseq")` package provides advanced pruning of taxa, such as the following which keeps only taxa that are among the most abundant 5% in at least five samples:
 
-```{r, warning=FALSE}
-keepotu = genefilter_sample(loman.pseq, filterfun_sample(topp(0.05)), A=5)
+```{r, warning=FALSE,eval=FALSE}
+keepotu = genefilter_sample(ps , filterfun_sample(topp(0.05)), A=5)
 summary(keepotu)
-subset_taxa(loman.pseq, keepotu)
+subset_taxa(ps , keepotu)
 ```
 
 Note that `r BiocStyle::Biocpkg("phyloseq")` also provides `topk()` for selecting the most abundant `k` taxa, and other functions for advanced pruning of taxa.
@@ -122,19 +118,18 @@ Note that `r BiocStyle::Biocpkg("phyloseq")` also provides `topk()` for selectin
 
 The `r BiocStyle::Biocpkg("phyloseq")` package provides the `plot_heatmap()` function to create heatmaps using a variety of built-in dissimilarity metrics for clustering. Here, we apply the same abundance filter as above, keep only strain-level OTUs. This function supports a large number of distance and ordination methods, here we use Bray-Curtis dissimilarity for distance and PCoA as the ordination method for organizing the heatmap.
 
-```{r, warning=FALSE}
-loman.filt = subset_taxa(loman.pseq, keepotu & !is.na(Strain))
-plot_heatmap(loman.filt, method="PCoA", distance="bray")
+```{r, warning=FALSE,eval=FALSE}
+plot_heatmap(ps, method="PCoA", distance="bray")
 ```
 
 ## Taxonomy Histogram
 
 Here we plot the top 20 most abundant species (not strains), defined by the sum of abundance across all samples in the dataset:
 
-```{r, warning=FALSE}
-loman.sp = subset_taxa(loman.pseq, !is.na(Species) & is.na(Strain))
+```{r, warning=FALSE,eval=FALSE}
+ps.sp = subset_taxa(ps , !is.na(Species) & is.na(Strain))
 par(mar = c(20, 4, 0, 0) + 0.15) #increase margin size on the bottom
-barplot(sort(taxa_sums(loman.sp), TRUE)[1:20] / nsamples(loman.sp),
+barplot(sort(taxa_sums(ps.sp), TRUE)[1:20] / nsamples(ps.sp),
         ylab = "Total counts", las = 2)
 ```
 
@@ -142,13 +137,13 @@ barplot(sort(taxa_sums(loman.sp), TRUE)[1:20] / nsamples(loman.sp),
 
 The `r BiocStyle::Biocpkg("phyloseq")` package calculates numerous alpha diversity measures. Here we compare three diversity in the species-level data, stratifying by stool texture:
 
-```{r, warning=FALSE}
+```{r, warning=FALSE,eval=FALSE}
 alphas = c("Shannon", "Simpson", "InvSimpson")
-plot_richness(loman.sp, "stool_texture", measures = alphas)
+plot_richness(ps, measures = alphas)
 ```
 Let's compare these three alpha diversity measures:
 
-```{r, warning=FALSE}
+```{r, warning=FALSE,eval=FALSE}
 pairs( estimate_richness(loman.sp, measures = alphas) )
 ```
 
@@ -161,12 +156,61 @@ For example, here is a hierarchical clustering dendrogram produced by the `hclus
 Fixme:
 Probably want to change this to use of pheatmap or neatmap.
 Poor quality output.
-```{r, warning=FALSE}
+```{r, warning=FALSE,eval=FALSE}
 mydist = distance(loman.sp, method="bray")
 myhclust = hclust( mydist )
 plot(myhclust, main="Bray-Curtis Dissimilarity", 
      method="ward.D", xlab="Samples", sub = "")
 ```
+
+## Data import
+
+The data we will analyze in the first part of the lab corresponds to 360 fecal samples which were collected from 12 mice longitudinally over the first year of life, to investigate the development and stabilization of the murine microbiome. Let's (down)load the dataset:
+
+```{r}
+download.file("https://cdn.rawgit.com/spholmes/F1000_workflow/891463f6/data/ps.rds",
+              "ps.rds",
+              mode="wb")
+ps = readRDS("ps.rds")
+```
+The `ps` object is of class `phyloseq` from the package `phyloseq`.
+
+```{r}
+class(ps)
+```
+
+How many distinct taxa?
+
+```{r}
+tax_table(ps)[,"Phylum"] %>% unique %>% na.exclude %>% length
+```
+
+
+## Preprocessing
+
+Before doing the multivariate projections, we will do some basic preprocessing. First remove features with ambiguous Phylum annotation:
+
+```{r}
+ps = subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
+```
+
+```{r}
+ggplot(sample_data(ps), aes(x=age)) + geom_histogram() + xlab("age")
+```
+
+We see that the ages of the mice come in a couple of groups, and so we make a categorical variable corresponding to young, middle-aged, and old mice. 
+
+```{r}
+sample_data(ps)$age_binned = cut(sample_data(ps)$age,
+  				          breaks = c(0, 100, 200, 400))
+```
+
+Furthermore, we log-transform the data. This is an approximate variance stabilizing transformation (it would be more appropriate to use the variance stabilizing functionality available in the `DESeq2` package).
+
+```{r}
+pslog = transform_sample_counts(ps, function(x) log(1 + x))
+```
+
 
 
 ## Ordination Analysis
@@ -175,15 +219,190 @@ The `r BiocStyle::Biocpkg("phyloseq")` package provides a variety of ordination 
 Principal Coordinates Analysis plot of species-level taxa from the Loman dataset, using Bray-Curtis distance:
 
 ```{r, warning=FALSE}
-ordinated_taxa = ordinate(loman.sp, method="PCoA", distance="bray")
-plot_ordination(loman.sp, ordinated_taxa, color="stool_texture", 
+resordinate = ordinate(pslog, method="PCoA", distance="bray")
+plot_ordination(pslog, resordinate, color="age_binned", shape="sex",
                 title = "Bray-Curtis Principal Coordinates Analysis")
 ```
 
 
 ```{r}
-plot_scree(ordinated_taxa, title="Screeplot")
+plot_scree(resordinate, title="Screeplot")
 ```
+
+We identify a few outliers that we remove:
+
+```{r}
+outlier_idx =   rownames(sample_data(pslog)) %in% c("M3D149","M2D19","M1D9", "M1D149", "F5D165", "F6D165")
+
+pslog2 = prune_samples(!outlier_idx, pslog)
+```
+
+Create taxa annotation:
+```{r}
+tax <- tax_table(ps)@.Data %>%
+  data.frame(stringsAsFactors = FALSE)
+tax$seq <- rownames(tax)
+
+main_orders <- c("Clostridiales", "Bacteroidales", "Lactobacillales",
+                   "Coriobacteriales")
+tax$Order[!(tax$Order %in% main_orders)] <- "Other"
+tax$Order <- factor(tax$Order, levels = c(main_orders, "Other"))
+tax$otu_id <- seq_len(ncol(otu_table(ps)))
+```
+
+
+
+
+## Canonical Correspondence
+
+Canonical Correspondence Analysis (CCpnA) is an approach to ordination of a species by sample table that incorporates supplemental information about the samples. As before, the purpose of creating biplots is to determine which types of bacterial communities are most prominent in different mouse sample types. It can be easier to interpret these biplots when the ordering between samples reflects sample characteristics – variations in age or litter status in the mouse data, for example – and this central to the design of CCpnA.
+
+The function allows to create biplots where the positions of samples are determined by similarity in both species signatures and environmental characteristics; in contrast, principal components analysis or correspondence analysis only look at species signatures. More formally, it ensures that the resulting CCpnA directions lie in the span of the environmental variables.
+
+Like PCoA and DPCoA, this method can be run using `ordinate` in `phyloseq`. In order to use supplemental sample data, it is necessary to provide an extra argument, specifying which of the features to consider – otherwise, phyloseq defaults to using all `sample_data` measurements when producing the ordination.
+
+```{r}
+ps_ccpna = ordinate(pslog2, "CCA", formula = pslog2 ~ age_binned + family_relationship)
+```
+
+To access the positions for the biplot, we can use the `scores` function in the `vegan` package. Further, to facilitate figure annotation, we also join the site scores with the environmental data in `sample_data`. We only explicitly annotate the four most abundant taxonomic orders – this makes the biplot easier to read.
+
+
+```{r}
+ps_scores = vegan::scores(ps_ccpna)
+sites = data.frame(ps_scores$sites)
+sites$SampleID = rownames(sites)
+sites = sites %>%
+  left_join(sample_data(ps))
+
+species = data.frame(ps_scores$species)
+species$otu_id = seq_along(colnames(otu_table(ps)))
+species = species %>% left_join(tax)
+
+evals_prop_ccpna = 100 * ps_ccpna$CCA$eig[1:2] / sum(ps_ccpna$CA$eig)
+```
+
+```{r}
+ggplot(data=sites) +
+  geom_point(data = sites, aes(x = CCA1, y = CCA2), shape = 2, alpha = 0.5) +
+  geom_point(data = species, aes(x = CCA1, y = CCA2, col = Order), size = 0.5) +
+  geom_text_repel(data = species %>% filter(CCA2 < -2),
+		    aes(x = CCA1, y = CCA2, label = otu_id),
+		    size = 1.5, segment.size = 0.1) +
+  facet_grid(. ~ age_binned) +
+  guides(col = guide_legend(override.aes = list(size = 3))) +
+  labs(x = sprintf("Axis1 [%s%% variance]", round(evals_prop_ccpna[1], 2)), 
+       y = sprintf("Axis2 [%s%% variance]", round(evals_prop_ccpna[2], 2))) +
+  scale_color_brewer(palette = "Set2") +
+  coord_fixed() +
+  theme(panel.border = element_rect(color = "#787878", fill = alpha("white", 0)))
+```
+
+The sites and species are triangles and circles, respectively.
+
+We have labeled individual microbes that are outliers along the second CCpnA direction.
+
+Evidently, the first CCpnA direction distinguishes between mice in the two main age bins. Circles on the left and right of the biplot represent microbes that are characteristic of younger and older mice, respectively. 
+
+This CCpnA analysis supports our conclusions from the earlier ordinations – the main difference between the microbiome communities of the different mice lies along the age axis. However, in situations where the influence of environmental variables is not so strong, CCA can have more power in detecting such associations. In general, it can be applied whenever it is desirable to incorporate supplemental data, but in a way that (1) is less aggressive than supervised methods, and (2) can use several environmental variables at once.
+
+**Quesion**
+Repeat the above plot, this time facetting on the litter (column `family_relationship`). Is Axis 1 or Axis 2 better at distinguishing the litter?
+
+
+# Multitables:
+
+
+Many microbiome studies attempt to quantify variation in the microbial, genomic, and metabolic measurements across different experimental conditions. As a result, it is common to perform multiple assays on the same biological samples and ask what features – bacteria, genes, or metabolites, for example – are associated with different sample conditions. There are many ways to approach these questions, which to apply depends on the study’s focus.
+
+Here, we will use sparse Canonical Correlation Analysis (sparse CCA), a method well-suited to both exploratory comparisons between samples and the identification of features with interesting variation. We will use an implementation from the `PMA` package.
+
+Since the mouse data used above included only a single table, we use a new [data set](http://www.pnas.org/content/110/42/17059). There are two tables here, one for bacteria and another with metabolites. 12 samples were obtained, each with measurements at 637 m/z values and 20,609 OTUs.
+
+## Preprocessing multi-tables data:
+
+First let's load the metabolite and microbe data.
+```{r}
+metab_path = url("https://cdn.rawgit.com/spholmes/F1000_workflow/891463f6/data/metabolites.csv")
+microbe_path = url("https://cdn.rawgit.com/spholmes/F1000_workflow/891463f6/data/microbe.rda")
+metab_init = read.csv(metab_path, row.names = 1)
+metab_init = as.matrix(metab_init)
+microbe = get(load(microbe_path))
+```
+
+We will do some preprocessing steps now, e.g. removing taxa which appear very rarely and log-transforming the metabolite data.
+
+```{r}
+keep_ix = rowSums(metab_init == 0) <= 3
+metab = metab_init[keep_ix, ]
+microbe = prune_taxa(taxa_sums(microbe) > 4, microbe)
+microbe = filter_taxa(microbe, filterfun(kOverA(3, 2)), TRUE)
+metab = log(1 + metab, base = 10)
+X = otu_table(microbe)@.Data
+X[X > 50] <- 50
+```
+
+We can now apply sparse CCA. This method compares sets of features across high-dimensional data tables, where there may be more measured features than samples. In the process, it chooses a subset of available features that capture the most covariance – these are the features that reflect signals present across multiple tables. We then apply PCA to this selected subset of features. In this sense, we use sparse CCA as a screening procedure, rather than as an ordination method.
+
+Our implementation is below. The parameters penaltyx and penaltyz are sparsity penalties. Larger values of `penaltyx` will result in more selected microbes, similarly `penaltyz` modulates the number of selected metabolites. We tune them manually to facilitate subsequent interpretation – we generally prefer more sparsity than the default parameters would provide.
+
+
+```{r}
+cca_res = CCA(t(X), t(metab),  penaltyx = .15, penaltyz = .15)
+cca_res
+```
+
+
+With these parameters, 5 microbes and 15 metabolites have been selected, based on their ability to explain covariation between tables. Further, these 20 features result in a correlation of 0.974 between the two tables. We interpret this to mean that the microbial and metabolomic data reflect similar underlying signals, and that these signals can be approximated well by the 20 selected features. 
+
+Be wary of the correlation value, however, since the scores are far from the usual bivariate normal cloud. Further, note that it is possible that other subsets of features could explain the data just as well – sparse CCA has minimized redundancy across features, but makes no guarantee that these are the “true” features in any sense.
+
+
+
+Nonetheless, we can still use these 20 features to compress information from the two tables without much loss. To relate the recovered metabolites and OTUs to characteristics of the samples on which they were measured, we use them as input to an ordinary PCA.
+
+
+```{r}
+combined = cbind(t(X[cca_res$u != 0, ]),
+		    t(metab[cca_res$v != 0, ]))
+pca_res = dudi.pca(combined, scannf = F, nf = 3)
+# annotation
+genotype = substr(rownames(pca_res$li), 1, 2)
+sample_type = substr(rownames(pca_res$li), 3, 4)
+feature_type = grepl("\\.", colnames(combined))
+feature_type = ifelse(feature_type, "Metabolite", "OTU")
+
+sample_info = data.frame(pca_res$li, genotype, sample_type)
+feature_info = data.frame(pca_res$c1,
+			      feature = substr(colnames(combined), 1, 6),
+			      feature_type = feature_type)
+```
+
+
+```{r}
+ggplot() + geom_point(data = sample_info,
+            aes(x = Axis1, y = Axis2, col = sample_type, shape = genotype), size = 3) +
+  geom_label_repel(data = feature_info,
+                     aes(x = 5.5 * CS1, y = 5.5 * CS2, label = feature, fill = feature_type),
+                     size = 2, segment.size = 0.3,
+                     label.padding = unit(0.1, "lines"), label.size = 0) +
+  geom_point(data = feature_info,
+	      aes(x = 5.5 * CS1, y = 5.5 * CS2, fill = feature_type),
+	      size = 1, shape = 23, col = "#383838") +
+  scale_color_brewer(palette = "Set2") +
+  scale_fill_manual(values = c("#a6d854", "#e78ac3")) +
+  guides(fill = guide_legend(override.aes = list(shape = 32, size = 0))) +
+  coord_fixed(sqrt(pca_res$eig[2] / pca_res$eig[2])) +
+  labs(x = sprintf("Axis1 [%s%% Variance]",
+	            100 * round(pca_res$eig[1] / sum(pca_res$eig), 2)),
+       y = sprintf("Axis2 [%s%% Variance]",
+	            100 * round(pca_res$eig[2] / sum(pca_res$eig), 2)),
+       fill = "Feature Type", col = "Sample Type")
+```
+
+This is a PCA triplot, where we show different types of samples and the multidomain features (Metabolites and OTUs). This allows comparison across the measured samples – triangles for Knockout and circles for wild type – and characterizes the influence the different features – diamonds with text labels. For example, we see that the main variation in the data is across PD and ST samples, which correspond to the different diets. For example, large values of 15 of the features are associated with ST status. The advantage of the sparse CCA screening is now clear – we can display most of the variation across samples using a relatively simple plot, and can avoid plotting the hundreds of additional points that would be needed to display all of the features.
+
+
 
 # DPCOA and adaptive GPCA analyses
 
@@ -195,7 +414,7 @@ This can be done through either the use of the ordinate
 function with the method="DPCoA" or better still by using the new adaptiveGPCA
 package:
 
-```{r}
+```{r, eval=FALSE}
 data(AntibioticSmall)
 out.ff = gpcaFullFamily(AntibioticSmall$X, AntibioticSmall$Q, k = 2)
 ```
@@ -235,9 +454,7 @@ out.treeda = treeda(response = sample_data(AntibioticPhyloseq)$type,
     tree = phy_tree(AntibioticPhyloseq), p = 15)
 ```
 
-# Multi-table analyses
 
-##Sparse canonical correlations
 
 # Looking at longitudinal data in the presence of a tree using treelapse.
 
