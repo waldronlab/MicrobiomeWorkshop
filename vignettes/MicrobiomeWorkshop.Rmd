@@ -28,13 +28,13 @@ Install them if not available
 
 
 ```{r NeededPackages}
-CRANpackages=c("ggplot2","devtools","adaptivGPCA","treelapse", "structSSI", "vegan", "phangorn")
+cranpkgs=c("ggplot2","devtools","adaptivGPCA","treelapse", "structSSI", "vegan", "phangorn")
 BioCpkgs=c("dada2", "curatedMetagenomicData", "phyloseq", "DECIPHER")
 ghpkgs= c("treeDA", "treelapse")
 
-instp <-  CRANpackages %in% installed.packages()
+instp <-  cranpkgs %in% installed.packages()
 if(any(!instp)) {
-   install.packages(CRANpackages[!instp])
+   install.packages(cranpkgs[!instp],repos="https://cloud.r-project.org")
 }
 instp <- BioCpkgs %in% installed.packages()
 if(any(!instp)) {
@@ -48,8 +48,7 @@ if(!("treeDA"  %in% installed.packages()))
    devtools::install_github("jfukuyama/treeDA", dependencies = TRUE)
 if(!("treelapse"  %in% installed.packages()))
   devtools::install_github("krisrs1128/treelapse", dependencies = TRUE)
-
-sapply(c(CRANpackages, BioCpkgs, ghpkgs), require, character.only = TRUE)
+sapply(c(cranpkgs, BioCpkgs, ghpkgs), require, character.only = TRUE)
 
 ```
 
@@ -108,9 +107,12 @@ table(combined_metadata$disease)
 
 Individual data projects can be fetched via per-dataset functions or the `curatedMetagenomicData()` function. A function call to a dataset name returns a Bioconductor ExpressionSet object:
 
+%%%%FIXME: this doesn't run
+
 ```{r, message=FALSE}
 suppressPackageStartupMessages(library(curatedMetagenomicData))
-loman.eset = LomanNJ_2013.metaphlan_bugs_list.stool()
+##made a change to get it to run _Hi added to name??
+loman.eset = LomanNJ_2013_Hi.metaphlan_bugs_list.stool()
 ```
 
 The following creates a list of two `ExpressionSet` objects providing the BritoIL_2016 and Castro-NallarE_2015 oral cavity taxonomic profiles:
@@ -333,14 +335,20 @@ pairs( estimate_richness(loman.sp, measures = alphas) )
 
 ## Beta Diversity / Dissimilarity Clustering
 
-Numerous beta diversity / dissimilarity are provided by the `distance()` function when provided a `r BiocStyle::Biocpkg("phyloseq")` object, and these can be used for any kind of clustering or classification scheme. For example, here is a hierarchical clustering dendrogram produced by the `hclust()` from the base R `stats` package with "Ward" linkage:
+Numerous beta diversity / dissimilarity are provided by the `distance()` function when provided a `r BiocStyle::Biocpkg("phyloseq")` object, and these can be used for any kind of clustering or classification scheme. 
 
+For example, here is a hierarchical clustering dendrogram produced by the `hclust()` from the base R `stats` package with "Ward" linkage:
+
+Fixme:
+Probably want to change this to use of pheatmap or neatmap.
+Poor quality output.
 ```{r, warning=FALSE}
 mydist = distance(loman.sp, method="bray")
 myhclust = hclust( mydist )
 plot(myhclust, main="Bray-Curtis Dissimilarity", 
      method="ward.D", xlab="Samples", sub = "")
 ```
+
 
 ## Ordination Analysis
 
@@ -369,8 +377,6 @@ function with the method="DPCoA" or better still by using the new adaptiveGPCA
 package:
 
 ```{r}
-#install.pacakges("adaptiveGPCA")
-library("adaptiveGPCA")
 data(AntibioticSmall)
 out.ff = gpcaFullFamily(AntibioticSmall$X, AntibioticSmall$Q, k = 2)
 ```
@@ -412,5 +418,4 @@ out.treeda = treeda(response = sample_data(AntibioticPhyloseq)$type,
 
 # Looking at longitudinal data in the presence of a tree using treelapse.
 
-
-# 
+[Tutorial to follow](http://statweb.stanford.edu/~kriss1/antibiotic.html)
