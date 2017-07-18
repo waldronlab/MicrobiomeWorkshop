@@ -236,6 +236,15 @@ otu_table( loman.pseq2 )[1:6, 1:5]
 
 Note the simplified row names of the OTU table, resulting from the default argument `simplify=TRUE`. The simplified names are convenient, and lossless because taxonomic information is now attainable by `tax_table(loman.pseq2)`
 
+# dada2 theory
+
+CLustering using frequencies not just distances.
+
+# dada2 tutorial
+
+[See tutorial here](https://benjjneb.github.io/dada2/tutorial.html)
+
+
 ## Components of a phyloseq object
 
 This  `r BiocStyle::Biocpkg("phyloseq")` objects contain 3 components, with extractor functions hinted at by its show method:
@@ -418,6 +427,10 @@ out.treeda = treeda(response = sample_data(AntibioticPhyloseq)$type,
     predictors = otu_table(AntibioticPhyloseq),
     tree = phy_tree(AntibioticPhyloseq), p = 15)
 ```
+
+# Multi-table analyses
+
+##Sparse canonical correlations
 
 # Looking at longitudinal data in the presence of a tree using treelapse.
 
