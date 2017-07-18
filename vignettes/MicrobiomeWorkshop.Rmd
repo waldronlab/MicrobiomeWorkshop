@@ -16,6 +16,43 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(cache = TRUE)
 ```
 
+# Check for packages,
+
+Install them if not available
+
+.cran_packages <- c("ggplot2", "gridExtra")
+.bioc_packages <- c("dada2", "phyloseq", "DECIPHER", "phangorn")
+
+# Load packages into session, and print package version
+
+
+
+```{r NeededPackages}
+CRANpackages=c("ggplot2","devtools","adaptivGPCA","treelapse", "structSSI", "vegan", "phangorn")
+BioCpkgs=c("dada2", "curatedMetagenomicData", "phyloseq", "DECIPHER")
+ghpkgs= c("treeDA", "treelapse")
+
+instp <-  CRANpackages %in% installed.packages()
+if(any(!instp)) {
+   install.packages(CRANpackages[!instp])
+}
+instp <- BioCpkgs %in% installed.packages()
+if(any(!instp)) {
+   source("http://bioconductor.org/biocLite.R")
+   biocLite(BioCpkgs [!instp], ask = F)
+}
+
+## Check for github packages
+#instp <- ghpkgs %in% installed.packages()
+if(!("treeDA"  %in% installed.packages()))
+   devtools::install_github("jfukuyama/treeDA", dependencies = TRUE)
+if(!("treelapse"  %in% installed.packages()))
+  devtools::install_github("krisrs1128/treelapse", dependencies = TRUE)
+
+sapply(c(CRANpackages, BioCpkgs, ghpkgs), require, character.only = TRUE)
+
+```
+
 # `curatedMetagenomicData`
 
 `curatedMetagenomicData` provides 6 types of data for each dataset:
@@ -169,7 +206,7 @@ hist( x, xlab = "Relative Abundance", main="Prevalence of E. Coli",
 
 # Taxonomy-Aware Analysis using `phyloseq`
 
-For the MetaPhlAn2 bugs datasets (but not other data types), you gain a lot of taxonomy-aware, ecological analysis and plotting by conversion to a `r BiocStyle::Biocpkg("phyloseq")` class object. `r BiocStyle::Biocpkg("curatedMetagenomicData")` provides the `ExpressionSet2phyloseq()` function to make this easy:
+For the MetaPhlAn2 bugs datasets (but not other data types), you gain a lot of phylogeny-aware, ecological analysis and plotting by conversion to a `r BiocStyle::Biocpkg("phyloseq")` class object. `r BiocStyle::Biocpkg("curatedMetagenomicData")` provides the `ExpressionSet2phyloseq()` function to make this easy:
 
 ```{r, warning=FALSE}
 suppressPackageStartupMessages(library(phyloseq))
@@ -341,6 +378,7 @@ out.ff = gpcaFullFamily(AntibioticSmall$X, AntibioticSmall$Q, k = 2)
 Interpolation between complete tree based DPCOA analyses and
 PCA analysis, this requires interactive use and shiny, so not evaluated
 in vignette here:
+
 ```{r, eval =FALSE}
 #not run
 data(AntibioticPhyloseq)
@@ -356,9 +394,20 @@ out.agpca = visualizeFullFamily(out.ff,
 
 # Sparse discriminant analyses using a phylogenetic tree
 
+The package itself needs to downloaded from github:
+
 ```{r}
+##devtools::install.github("jfukuyama/treeDA")
+library(treeDA)
+library(adaptiveGPCA)
+data(AntibioticPhyloseq)
+theme_set(theme_bw())
+```
 
-
+```{r}
+out.treeda = treeda(response = sample_data(AntibioticPhyloseq)$type,
+    predictors = otu_table(AntibioticPhyloseq),
+    tree = phy_tree(AntibioticPhyloseq), p = 15)
 ```
 
 # Looking at longitudinal data in the presence of a tree using treelapse.
