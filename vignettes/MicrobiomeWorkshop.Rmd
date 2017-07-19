@@ -237,7 +237,7 @@ loman.eset = LomanNJ_2013.metaphlan_bugs_list.stool()
 mr_exp_loman <- ExpressionSet2MRexperiment(loman.eset)
 
 fd = fData(mr_exp_loman) 
-for( i in seq(ncol(fd))){
+for(i in seq(ncol(fd))){
    fd[,i] = as.character(fd[,i]) 
 } 
 fData(mr_exp_loman) = fd
@@ -255,7 +255,14 @@ Once the data is formatted, we can start a WebSocket connection to an instance o
 
 ```{r}
 feature_order <- colnames(fData(leaves_data))
-public_ipv4 <- httr::content(httr::GET("http://169.254.169.254/latest/meta-data/public-ipv4"))
+
+public_ipv4 <- try(httr::content(httr::GET("http://169.254.169.254/latest/meta-data/public-ipv4")), silent = TRUE)
+
+if(grepl("Timeout was reached", simpleMessage(public_ipv4))){
+  app <- startMetaviz()
+} else{
+  app <- startMetavizStandalone(host=public_ipv4, daemonized=FALSE)
+}
 
 app <- startMetavizStandalone(host=public_ipv4, daemonized=FALSE, verbose = TRUE)
 
