@@ -5,8 +5,9 @@ Description: This workshop covers databases and tools for accessing and analysin
 Version: 0.1
 Depends:
   R (>= 3.4.0),
-  Biobase (>= 2.37),
-  curatedMetagenomicData (>= 1.5.8),
+  Biobase (>= 2.36.0)
+Suggests:
+  curatedMetagenomicData,
   phyloseq,
   metagenomeSeq,
   metavizr,
@@ -16,8 +17,7 @@ Depends:
   httr,
   treeDA,
   adaptiveGPCA,
-  treelapse
-Suggests:
+  treelapse,
   knitr,
   rmarkdown
 Author:
