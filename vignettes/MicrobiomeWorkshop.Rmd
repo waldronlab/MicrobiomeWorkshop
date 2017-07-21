@@ -1,10 +1,16 @@
 ---
 title: "Workshop on microbiome data package in Bioconductor"
 abstract: >
-  Bioconductor provides significant resources for microbiome data acquisition, analysis, and visualization. This workshop introduces `curatedMetagenomicData`, a resource providing uniformly processed taxonomic and metabolic functional profiles for more than 5,000 whole metagenome shotgun sequencing samples from 26 publicly available studies, including the Human Microbiome Project, along with curated participant data. 
-  
+  Bioconductor provides significant resources for microbiome data acquisition, analysis, and
+  visualization. This workshop introduces `curatedMetagenomicData`, a resource providing uniformly 
+  processed taxonomic and metabolic functional profiles for more than 5,000 whole metagenome shotgun 
+  sequencing samples from 26 publicly available studies, including the Human Microbiome Project, along with curated participant data. It demonstrates analysis of these data using the `dada2`, `phyloseq`, `treeDA`, `adaptiveGPCA` and `metagenomeSeq` packages for denoising, estimating differential abundance, alpha and beta diversities, ordinations, and other aspects of microbiome data analysis. We also show the `treelapse` and `metavizr` packages for browsing and interactive visualization of microbiome profiles. Together, these packages provide easily linked components for data acquisition and flexible analysis of 16S rRNA and whole metagenome shotgun microbiome profiles. At the end of this workshop, users will be able to access publicly available metagenomic data and to perform differential abundance tests, visualization and
+    multivariate statistical analyses of these and other data in R/Bioconductor.
 output:
-    BiocStyle::html_document
+  BiocStyle::html_document:
+    number_sections: no
+    toc: yes
+    toc_depth: 4
 vignette: >
     %\VignetteIndexEntry{MicrobiomeWorkshopI}
     %\VignetteEngine{knitr::rmarkdown}
@@ -14,36 +20,33 @@ vignette: >
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(cache = TRUE)
+isdevel <- Biobase::package.version("Biobase") > 2.37
 ```
 
 
-# Load packages into session, and print package version
+# Install packages
 
+Installing all necessary packages can be accomplished by the following command:
 
+```{r, eval=FALSE}
+library(BiocInstaller)
+biocLite(c("waldronlab/MicrobiomeWorkshop", "epiviz/metavizr@bioc-workshop"),
+         dependencies=TRUE)
+```
 
-```{r NeededPackages}
-cranpkgs=c("ggplot2","devtools","vegan","httr")
-BioCpkgs=c( "curatedMetagenomicData", "phyloseq")
-ghpkgs= c("metavizr")
-
-instp <-  cranpkgs %in% installed.packages()
-if(any(!instp)) {
-   install.packages(cranpkgs[!instp],repos="https://cloud.r-project.org")
-}
-instp <- BioCpkgs %in% installed.packages()
-if(any(!instp)) {
-   source("http://bioconductor.org/biocLite.R")
-   biocLite(BioCpkgs [!instp], ask = F)
-}
-
-## Check for github packages
-#instp <- ghpkgs %in% installed.packages()
-
+Double-check that "metavizr" is installed from GitHub:
+```{r NeededPackagespac}
 if(!("metavizr" %in% installed.packages()) || "1.1.2" != installed.packages()["metavizr","Version"])
   devtools::install_github("epiviz/metavizr@bioc-workshop", build_vignettes = TRUE)
+```
 
-sapply(c(cranpkgs, BioCpkgs, ghpkgs), require, character.only = TRUE)
-
+Load all needed packages:
+```{r}
+cranpkgs=c("ggplot2","devtools","vegan","httr")
+BioCpkgs=c( "curatedMetagenomicData", "phyloseq")
+ghpkgs= "metavizr"
+allpkg <- c(cranpkgs, BioCpkgs, ghpkgs)
+sapply(allpkg, require, character.only = TRUE)
 ```
 
 # `curatedMetagenomicData`
@@ -69,8 +72,7 @@ ExpressionSet objects
 * Processing of data through the [MetaPhlAn2](http://huttenhower.sph.harvard.edu/metaphlan2) pipeline for taxonomic abundance, and [HUMAnN2](http://huttenhower.sph.harvard.edu/humann2) pipeline for metabolic analysis
 * This effort required analyzing ~100T of raw sequencing data
 
-These datasets are documented in the 
-[reference manual](https://bioconductor.org/packages/devel/data/experiment/manuals/curatedMetagenomicData/man/curatedMetagenomicData.pdf).
+These datasets are documented in the reference manuals of the [release](http://bioconductor.org/packages/release/data/experiment/html/curatedMetagenomicData.html) or [devel](http://bioconductor.org/packages/devel/data/experiment/html/curatedMetagenomicData.html) versions of Bioconductor. The development version has approximately twice as many datasets and significantly more functionality. The AMI provided at the Bioc2017 workshop runs the development version of Bioconductor; see http://bioconductor.org/developers/how-to/useDevel/ for instructions on upgrading your own machine to the development version and switching between devel and release.
 
 ## Using `curatedMetagenomicData` Resources
 
@@ -101,17 +103,14 @@ table(combined_metadata$disease)
 
 Individual data projects can be fetched via per-dataset functions or the `curatedMetagenomicData()` function. A function call to a dataset name returns a Bioconductor ExpressionSet object:
 
-%%%%FIXME: this doesn't run
-
 ```{r, message=FALSE}
 suppressPackageStartupMessages(library(curatedMetagenomicData))
-##made a change to get it to run _Hi added to name??
-loman.eset = LomanNJ_2013_Hi.metaphlan_bugs_list.stool()
+zeller.eset = ZellerG_2014.metaphlan_bugs_list.stool()
 ```
 
-The following creates a list of two `ExpressionSet` objects providing the BritoIL_2016 and Castro-NallarE_2015 oral cavity taxonomic profiles:
+The following creates a list of two `ExpressionSet` objects providing the BritoIL_2016 and Castro-NallarE_2015 oral cavity taxonomic profiles (this method works in release or devel, but these datasets are available in devel only). See a complete list of available datasets in the PDF manual.
 
-```{r, message=FALSE, results='hide'}
+```{r, message=FALSE, results='hide', eval = isdevel}
 oral <- c("BritoIL_2016.metaphlan_bugs_list.oralcavity",
           "Castro-NallarE_2015.metaphlan_bugs_list.oralcavity")
 esl <- curatedMetagenomicData(oral, dryrun = FALSE)
@@ -128,9 +127,9 @@ curatedMetagenomicData("*metaphlan_bugs_list.stool*", dryrun = TRUE)
 
 ### Merging multiple datasets
 
-The following merges the two oral cavity datasets downloaded above into a single ExpressionSet. 
+The following merges the two oral cavity datasets downloaded above into a single ExpressionSet (devel only). 
 
-```{r}
+```{r, eval=isdevel}
 eset <- mergeData(esl)
 eset
 ```
@@ -144,53 +143,66 @@ All datasets are represented as `ExpressionSet` objects because of the integrati
 To access the experiment-level metadata the `experimentData()` function is used to return a `MIAME` (Minimum Information About a Microarray Experiment) object.
 
 ```{r}
-experimentData( loman.eset )
+experimentData( zeller.eset )
 ```
 
 To access the subject-level metadata the `pData()` function is used to return a `data.frame` containing subject-level variables of study.
 
 ```{r}
-head( pData( loman.eset ) )
+head( pData( zeller.eset ) )
 ```
 
 To access the data itself (in this case relative abundance), the `exprs()` function returns a variables by samples (rows by columns) numeric matrix. Note the presence of "synthetic" clades at all levels of the taxonomy, starting with kingdom, e.g. k__bacteria here:
 
 ```{r}
-exprs( loman.eset )[1:6, 1:5]  #first 6 rows and 5 columns
+exprs( zeller.eset )[1:6, 1:5]  #first 6 rows and 5 columns
 ```
 
 Bioconductor provides further documentation of the ExpressionSet class and has published an excellent [introduction](https://tinyurl.com/ExpressionSetIntro).
 
 ## Creating `phyloseq` and `metagenomeSeq` objects
 
-`curatedMetagenomicData` provides convenience functions for converting its *ExpressionSet* objects to *phyloseq::phyloseq* and *metagenomeSeq:MRExperiment* class objects for downstream analysis. For example, to convert the **loman.eset** object to these two classes:
+`curatedMetagenomicData` provides convenience functions for converting its *ExpressionSet* objects to *phyloseq::phyloseq* and *metagenomeSeq:MRExperiment* class objects for downstream analysis. For example, to convert the **zeller.eset** object to these two classes:
 
 ```{r}
-ExpressionSet2phyloseq(loman.eset)
-ExpressionSet2MRexperiment(loman.eset)
+ExpressionSet2phyloseq(zeller.eset)
+ExpressionSet2MRexperiment(zeller.eset)
 ```
 
 This also works on the merged **eset** object from above:
 
-```{r}
+```{r, eval=isdevel}
 ExpressionSet2phyloseq(eset)
 ExpressionSet2MRexperiment(eset)
 ```
 
+## phylogenetic trees and UniFrac distances
+
+Set **phylogenetictree = TRUE** to include a phylogenetic tree in the `phyloseq` object (bioc-devel only):
+
+```{r}
+zeller.tree <- ExpressionSet2phyloseq( zeller.eset, phylogenetictree = TRUE)
+```
+
+```{r}
+wt = UniFrac(zeller.tree, weighted=TRUE, normalized=FALSE, 
+             parallel=FALSE, fast=TRUE)
+plot(hclust(wt), main="Weighted UniFrac distances")
+```
 
 ## Exploratory analysis of E. coli prevalence
 
-Here's a direct, exploratory analysis of *E. coli* prevalence in the Loman dataset using the `ExpressionSet` object. More elegant solutions will be provided later using subsetting methods provided by the `r BiocStyle::Biocpkg("phyloseq")` package, but for users familiar with `grep()` and the `ExpressionSet` object, such manual methods may suffice.
+Here's a direct, exploratory analysis of *E. coli* prevalence in the zeller dataset using the `ExpressionSet` object. More elegant solutions will be provided later using subsetting methods provided by the `r BiocStyle::Biocpkg("phyloseq")` package, but for users familiar with `grep()` and the `ExpressionSet` object, such manual methods may suffice.
 
 First, which *E. coli*-related taxa are available?
 
 ```{r}
-grep("coli", rownames(loman.eset), value=TRUE)
+grep("coli", rownames(zeller.eset), value=TRUE)
 ```
 
 Create a vector of *E. coli* relative abundances. This `grep` call with a "$" at the end selects the only row that ends with "s__Escherichia_coli":
 ```{r}
-x = exprs( loman.eset )[grep("s__Escherichia_coli$", rownames( loman.eset)), ]
+x = exprs( zeller.eset )[grep("s__Escherichia_coli$", rownames( zeller.eset)), ]
 summary( x )
 ```
 
@@ -200,49 +212,49 @@ hist( x, xlab = "Relative Abundance", main="Prevalence of E. Coli",
       breaks="FD")
 ```
 
+## Estimating Absolute Raw Count Data
+
+Absolute raw count data can be estimated from the relative count data by multiplying the columns of the `ExpressionSet` data by the number of reads for each sample, as found in the `pData` column "number_reads". For demo purposes you could (but don't have to!) do this manually by dividing by 100 and multiplying by the number of reads:
+
+```{r}
+zeller.counts = sweep(exprs( zeller.eset ), 2, zeller.eset$number_reads / 100, "*")
+zeller.counts = round(zeller.counts)
+zeller.counts[1:6, 1:5]
+```
+
+or just set the `counts` argument in `curatedMetagenomicData()` to `TRUE`:
+
+```{r}
+zeller.eset2 = curatedMetagenomicData("ZellerG_2014.metaphlan_bugs_list.stool",
+                                     counts = TRUE, 
+                                     dryrun = FALSE)[[1]]
+all.equal(exprs(zeller.eset2), zeller.counts)
+```
+
+
 # Taxonomy-Aware Analysis using `phyloseq`
 
 For the MetaPhlAn2 bugs datasets (but not other data types), you gain a lot of phylogeny-aware, ecological analysis and plotting by conversion to a `r BiocStyle::Biocpkg("phyloseq")` class object. `r BiocStyle::Biocpkg("curatedMetagenomicData")` provides the `ExpressionSet2phyloseq()` function to make this easy:
 
 ```{r, warning=FALSE}
 suppressPackageStartupMessages(library(phyloseq))
-loman.pseq = ExpressionSet2phyloseq( loman.eset )
+zeller.pseq = ExpressionSet2phyloseq( zeller.eset )
 ```
-
-## Estimating Absolute Raw Count Data
-
-Absolute raw count data can be estimated from the relative count data by multiplying the columns of the `ExpressionSet` data by the number of reads for each sample, as found in the `pData` column "number_reads". You could do this manually using the `sweep()` function (dividing by 100 to convert relative abundance percentages to fractions):
-
-```{r}
-loman.counts = sweep(exprs( loman.eset ) / 100, 2, loman.eset$number_reads, "*")
-loman.counts[1:6, 1:5]
-```
-
-or just set the `relab` argument in `Expressionset2phyloseq()` to `FALSE`:
-
-```{r}
-loman.pseq2 = ExpressionSet2phyloseq( loman.eset, relab=FALSE )
-otu_table( loman.pseq2 )[1:6, 1:5]
-```
-
-Note the simplified row names of the OTU table, resulting from the default argument `simplify=TRUE`. The simplified names are convenient, and lossless because taxonomic information is now attainable by `tax_table(loman.pseq2)`
 
 # Visualization with Metavizr
 
-We can now examine the loman dataset with Metavizr. This visualization tool allows interactive exploration of the taxonomic hierarchy and statistically-guided visual analysis. Specifically, metavizr enables feature selection through a navigation mechanism called FacetZoom. First we need to format the MRexperiment object to be used by metavizr. Currently, metavizr expects an annotation for each leaf, so this removes the inner nodes of the hierarchy. A version of metavizr is in development to use the inner node count values output by ExpressionSet2MRExperiment directly.
+We can now examine the zeller dataset with Metavizr. This visualization tool allows interactive exploration of the taxonomic hierarchy and statistically-guided visual analysis. Specifically, metavizr enables feature selection through a navigation mechanism called FacetZoom. First we need to format the MRexperiment object to be used by metavizr. Currently, metavizr expects an annotation for each leaf, so this removes the inner nodes of the hierarchy. A version of metavizr is in development to use the inner node count values output by ExpressionSet2MRExperiment directly.
 
 ```{r}
-loman.eset = LomanNJ_2013.metaphlan_bugs_list.stool()
+mr_exp_zeller <- ExpressionSet2MRexperiment(zeller.eset)
 
-mr_exp_loman <- ExpressionSet2MRexperiment(loman.eset)
-
-fd = fData(mr_exp_loman) 
+fd = fData(mr_exp_zeller) 
 for(i in seq(ncol(fd))){
    fd[,i] = as.character(fd[,i]) 
 } 
-fData(mr_exp_loman) = fd
+fData(mr_exp_zeller) = fd
 
-leaves_data <- mr_exp_loman[-unname(which(is.na(fData(mr_exp_loman)$Species))),]
+leaves_data <- mr_exp_zeller[-unname(which(is.na(fData(mr_exp_zeller)$Species))),]
 
 na_strain_indices <- which(is.na(fData(leaves_data)$Strain))
 
@@ -253,7 +265,7 @@ for(n in na_strain_indices){
 
 Once the data is formatted, we can start a WebSocket connection to an instance of the Metaviz frontend. Then we add the navigation utility along with an interactive boxplot.
 
-```{r}
+```{r, eval=FALSE}
 feature_order <- colnames(fData(leaves_data))
 
 public_ipv4 <- try(httr::content(httr::GET("http://169.254.169.254/latest/meta-data/public-ipv4")), silent = TRUE)
@@ -266,7 +278,7 @@ if(grepl("Timeout was reached", simpleMessage(public_ipv4))){
 
 app <- startMetavizStandalone(host=public_ipv4, daemonized=FALSE, verbose = TRUE)
 
-facetZoom <- app$plot(leaves_data, datasource_name = "loman", feature_order = feature_order)
+facetZoom <- app$plot(leaves_data, datasource_name = "zeller", feature_order = feature_order)
 app$service()
 heatmap_plot <- app$chart_mgr$revisualize(chart_type = "HeatmapPlot", chart = facetZoom)
 app$service()

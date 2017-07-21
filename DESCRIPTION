@@ -10,7 +10,10 @@ Depends:
   phyloseq,
   metagenomeSeq,
   metavizr,
-  dada2
+  dada2,
+  ggplot2,
+  vegan,
+  httr
 Suggests:
   knitr,
   rmarkdown
