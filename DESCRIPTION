@@ -13,7 +13,10 @@ Depends:
   dada2,
   ggplot2,
   vegan,
-  httr
+  httr,
+  treeDA,
+  adaptiveGPCA,
+  treelapse
 Suggests:
   knitr,
   rmarkdown
