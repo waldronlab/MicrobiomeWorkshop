@@ -4,8 +4,11 @@ abstract: >
  The second part of the workshop  demonstrates how to use `dada2` on raw reads, and analysis of these data using the `phyloseq`, `treeDA`, `adaptiveGPCA` packages for denoising, estimating differential abundance, ordinations. The `treelapse` and  `metavizr` packages allow browsing and interactive visualization of microbiome profiles. Together, these packages provide easily linked components for data acquisition and flexible analysis of 16S rRNA and whole metagenome shotgun microbiome profiles. At the end of this workshop, users will be able to access publicly available metagenomic data and to perform common statistical analyses of these and other data in Bioconductor.
 author: "Susan Holmes and Joey McMurdie"
 date: "July 17, 2017"
-output: 
-    BiocStyle::html_document
+output:
+  BiocStyle::html_document:
+    number_sections: no
+    toc: yes
+    toc_depth: 4
 vignette: >
     %\VignetteIndexEntry{MicrobiomeWorkshopII}
     %\VignetteEngine{knitr::rmarkdown}
@@ -20,7 +23,7 @@ knitr::opts_chunk$set(cache = TRUE)
 
 
 ```{r NeededPackages}
-cranpkgs=c("ggplot2","devtools","adaptivGPCA","treelapse", "ade4","structSSI", "PMA","vegan", "ggrepel")
+cranpkgs=c("ggplot2","devtools","adaptiveGPCA","treelapse", "ade4","structSSI", "PMA","vegan", "ggrepel")
 BioCpkgs=c("dada2", "curatedMetagenomicData", "phyloseq", "DECIPHER","genefilter")
 ghpkgs= c("treeDA", "treelapse","metavizr")
 instp <-  cranpkgs %in% installed.packages()
