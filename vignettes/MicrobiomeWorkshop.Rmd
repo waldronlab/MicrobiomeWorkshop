@@ -249,7 +249,14 @@ We can now examine the zeller dataset with Metavizr. This visualization tool all
 ```{r, eval=FALSE}
 zeller_MR_expr = ExpressionSet2MRexperiment(zeller.eset)
 
-app <- startMetaviz(host="http://metaviz-dev.cbcb.umd.edu")
+public_ipv4 <- try(httr::content(httr::GET("http://169.254.169.254/latest/meta-data/public-ipv4")), silent = TRUE)
+
+if(grepl("Timeout was reached", simpleMessage(public_ipv4))){
+  app <- startMetaviz(host="http://metaviz-dev.cbcb.umd.edu")
+} else{
+  setMetavizStandalone()
+  app <- startMetavizStandalone(host=public_ipv4, daemonized=FALSE)
+}
 ```
 
 From the metavizr vignette: Once the browser is open we can visualize the metagenomic features from the zeller_MR_expr object. We use the `plot` method to do so. The `plot` function can take as input any of the classes registered with epivirData.
