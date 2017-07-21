@@ -24,6 +24,7 @@ Suggests:
   ggrepel,
   DECIPHER,
   genefilter,
+  BiocStyle,
   knitr,
   rmarkdown
 Author:
