@@ -469,8 +469,3 @@ library(treelapse)
 ```
 
 
-
-TODO:
-# Other visualizations using metavizr
-
-
