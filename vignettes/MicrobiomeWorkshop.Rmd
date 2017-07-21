@@ -286,21 +286,21 @@ app$service()
 
 Now we will use metagenomeSeq to compute differential abundance for the zeller dataset at different levels of the taxonomy. For the metagenomeSeq data model, we will keep only the leaf counts and then use the metagenomeSeq function aggregateByTaxonomy to compute counts at different levels of the hierarchy. 
 
-```{r}
+```{r, eval=FALSE}
 # Removes counts and features all levels of the taxonomy except for the lowest level
 zeller_MR_expr <- zeller_MR_expr[-unname(which(is.na(fData(zeller_MR_expr)$Strain))),]
 ```
 
 Also, to perform differential abundance testing, we remove samples with `group` as <NA> in the dataset. A more flexible testing mechanism is in development for metagenomeSeq.
 
-```{r}
+```{r, eval=FALSE}
 zeller_MR_expr <- zeller_MR_expr[,-which(is.na(pData(zeller_MR_expr)$group))]
 zeller_sample_data <-  pData(zeller_MR_expr)
 ```
 
 Now we can use the fitFeatureModel function to estimate log fold change for the features at the lowest level of the taxonomy, in this case Strain, between samples in the `control` and `crc` groups. We first normalize the count data using the cumulative sum scaling method.
 
-```{r}
+```{r, eval=FALSE}
 # Normalize counts using cummulative sum scaling method.
 zeller_MR_expr <-  cumNorm(zeller_MR_expr, p = 0.75)
 
