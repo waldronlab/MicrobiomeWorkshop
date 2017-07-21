@@ -247,16 +247,9 @@ Note the following useful arguments to ExpressionSet2phyloseq:
 We can now examine the zeller dataset with Metavizr. This visualization tool allows interactive exploration of the taxonomic hierarchy and statistically-guided visual analysis. Specifically, metavizr enables feature selection through a navigation mechanism called FacetZoom. 
 
 ```{r, eval=FALSE}
-
 zeller_MR_expr = ExpressionSet2MRexperiment(zeller.eset)
 
-public_ipv4 <- try(httr::content(httr::GET("http://169.254.169.254/latest/meta-data/public-ipv4")), silent = TRUE)
-
-if(grepl("Timeout was reached", simpleMessage(public_ipv4))){
-  app <- startMetaviz()
-} else{
-  app <- startMetavizStandalone(host=public_ipv4, daemonized=FALSE)
-}
+app <- startMetaviz(host="http://metaviz-dev.cbcb.umd.edu")
 ```
 
 From the metavizr vignette: Once the browser is open we can visualize the metagenomic features from the zeller_MR_expr object. We use the `plot` method to do so. The `plot` function can take as input any of the classes registered with epivirData.
