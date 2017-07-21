@@ -18,6 +18,12 @@ Suggests:
   treeDA,
   adaptiveGPCA,
   treelapse,
+  ade4,
+  structSSI,
+  PMA,
+  ggrepel,
+  DECIPHER,
+  genefilter,
   knitr,
   rmarkdown
 Author:
