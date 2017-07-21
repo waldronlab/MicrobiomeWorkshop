@@ -38,4 +38,5 @@ Author:
 Maintainer: Bioconductor Microbiome Special Interest Group <lwaldron.research@gmail.com>
 License: file LICENSE
 LazyData: true
+VignetteBuilder: knitr
 RoxygenNote: 6.0.1
