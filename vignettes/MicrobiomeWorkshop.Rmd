@@ -291,21 +291,21 @@ Now we will use metagenomeSeq to compute differential abundance for the zeller d
 zeller_MR_expr <- zeller_MR_expr[-unname(which(is.na(fData(zeller_MR_expr)$Strain))),]
 ```
 
-Also, to perform differential abundance testing, we remove samples with `group` as <NA> in the dataset. A more flexible testing mechanism is in development for metagenomeSeq.
+Also, to perform differential abundance testing, we remove samples with study_condition as adenoma in the dataset. A more flexible testing mechanism is in development for metagenomeSeq.
 
 ```{r, eval=FALSE}
-zeller_MR_expr <- zeller_MR_expr[,-which(is.na(pData(zeller_MR_expr)$group))]
+zeller_MR_expr <- zeller_MR_expr[,which(pData(zeller_MR_expr)$study_condition == "adenoma")]
 zeller_sample_data <-  pData(zeller_MR_expr)
 ```
 
-Now we can use the fitFeatureModel function to estimate log fold change for the features at the lowest level of the taxonomy, in this case Strain, between samples in the `control` and `crc` groups. We first normalize the count data using the cumulative sum scaling method.
+Now we can use the fitFeatureModel function to estimate log fold change for the features at the lowest level of the taxonomy, in this case Strain, between samples in the `control` and `crc` study conditions. We first normalize the count data using the cumulative sum scaling method.
 
 ```{r, eval=FALSE}
 # Normalize counts using cummulative sum scaling method.
 zeller_MR_expr <-  cumNorm(zeller_MR_expr, p = 0.75)
 
-# Set model to `group` and use the fitFeatureModel to test
-mod <-  model.matrix(~1+group, data = zeller_sample_data)
+# Set model to study_condition and use the fitFeatureModel to test
+mod <-  model.matrix(~1+study_condition, data = zeller_sample_data)
 results_zeller <-  fitFeatureModel(zeller_MR_expr, mod)
 logFC_zeller <- MRcoefs(results_zeller, number = nrow(results_zeller))
 ```
@@ -313,10 +313,9 @@ logFC_zeller <- MRcoefs(results_zeller, number = nrow(results_zeller))
 metagenomeSeq provides a variety of testing methods. We could also use the fitZig method to test for group and with gender as a covariate.
 
 ```{r, eval=FALSE}
-
-#mod_zig <-  model.matrix(~1+group+gender, data = zeller_sample_data)
-#results_zeller_zig <-  fitZig(zeller_MR_expr, mod_zig)
-#coefs_zeller_zig <- MRcoefs(results_zeller_zig, number = nrow(results_zeller_zig))
+mod_zig <-  model.matrix(~1+study_condition+gender, data = zeller_sample_data)
+results_zeller_zig <-  fitZig(zeller_MR_expr, mod_zig)
+coefs_zeller_zig <- MRcoefs(results_zeller_zig, number = nrow(results_zeller_zig))
 ```
 
 We will use result from fitFeatureModel as it provides logFC estimates for the features at this level between samples in the control and crc groups. We can examine them in tabular form. We can also use these results to select feature names to remove from consideration in a Metaviz. After removing features below a logFC threshold, we can interactively explore the results for the remaining features at different levels of the hierarchy.
@@ -363,7 +362,7 @@ aggregation_level = "Class"
 agg_zeller_MR_expr <- aggregateByTaxonomy(zeller_MR_expr, lvl=aggregation_level)
 
 agg_zeller_MR_expr <-  cumNorm(agg_zeller_MR_expr, p = 0.75)
-agg_mod <-  model.matrix(~1+group, data = pData(agg_zeller_MR_expr))
+agg_mod <-  model.matrix(~1+study_condition, data = pData(agg_zeller_MR_expr))
 agg_results_zeller <-  fitFeatureModel(agg_zeller_MR_expr, agg_mod)
 agg_logFC_zeller <- MRcoefs(agg_results_zeller, number = nrow(agg_results_zeller))
 
