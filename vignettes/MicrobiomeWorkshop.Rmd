@@ -22,7 +22,7 @@ knitr::opts_chunk$set(cache = TRUE)
 
 
 ```{r NeededPackages}
-cranpkgs=c("ggplot2","devtools","vegan")
+cranpkgs=c("ggplot2","devtools","vegan","httr")
 BioCpkgs=c( "curatedMetagenomicData", "phyloseq")
 ghpkgs= c("metavizr")
 
@@ -39,8 +39,8 @@ if(any(!instp)) {
 ## Check for github packages
 #instp <- ghpkgs %in% installed.packages()
 
-if(!("metavizr"  %in% installed.packages()))
-devtools::install_github("epiviz/metavizr", build_vignettes = TRUE)
+if(!("metavizr" %in% installed.packages()) || "1.1.2" != installed.packages()["metavizr","Version"])
+  devtools::install_github("epiviz/metavizr@bioc-workshop", build_vignettes = TRUE)
 
 sapply(c(cranpkgs, BioCpkgs, ghpkgs), require, character.only = TRUE)
 
@@ -227,3 +227,53 @@ otu_table( loman.pseq2 )[1:6, 1:5]
 
 Note the simplified row names of the OTU table, resulting from the default argument `simplify=TRUE`. The simplified names are convenient, and lossless because taxonomic information is now attainable by `tax_table(loman.pseq2)`
 
+# Visualization with Metavizr
+
+We can now examine the loman dataset with Metavizr. This visualization tool allows interactive exploration of the taxonomic hierarchy and statistically-guided visual analysis. Specifically, metavizr enables feature selection through a navigation mechanism called FacetZoom. First we need to format the MRexperiment object to be used by metavizr. Currently, metavizr expects an annotation for each leaf, so this removes the inner nodes of the hierarchy. A version of metavizr is in development to use the inner node count values output by ExpressionSet2MRExperiment directly.
+
+```{r}
+loman.eset = LomanNJ_2013.metaphlan_bugs_list.stool()
+
+mr_exp_loman <- ExpressionSet2MRexperiment(loman.eset)
+
+fd = fData(mr_exp_loman) 
+for(i in seq(ncol(fd))){
+   fd[,i] = as.character(fd[,i]) 
+} 
+fData(mr_exp_loman) = fd
+
+leaves_data <- mr_exp_loman[-unname(which(is.na(fData(mr_exp_loman)$Species))),]
+
+na_strain_indices <- which(is.na(fData(leaves_data)$Strain))
+
+for(n in na_strain_indices){
+  fData(leaves_data)[unname(n),]$Strain <- paste("Not_Annotated_Strain", paste(fData(leaves_data)[unname(n),]$Species, sep = ""), sep = "_")
+}
+```
+
+Once the data is formatted, we can start a WebSocket connection to an instance of the Metaviz frontend. Then we add the navigation utility along with an interactive boxplot.
+
+```{r}
+feature_order <- colnames(fData(leaves_data))
+
+public_ipv4 <- try(httr::content(httr::GET("http://169.254.169.254/latest/meta-data/public-ipv4")), silent = TRUE)
+
+if(grepl("Timeout was reached", simpleMessage(public_ipv4))){
+  app <- startMetaviz()
+} else{
+  app <- startMetavizStandalone(host=public_ipv4, daemonized=FALSE)
+}
+
+app <- startMetavizStandalone(host=public_ipv4, daemonized=FALSE, verbose = TRUE)
+
+facetZoom <- app$plot(leaves_data, datasource_name = "loman", feature_order = feature_order)
+app$service()
+heatmap_plot <- app$chart_mgr$revisualize(chart_type = "HeatmapPlot", chart = facetZoom)
+app$service()
+
+#On rstudio-server version < 1.1.273, the user need to run the app$service() command after each user input on the UI. There is a bug with Rstudio-server interferring with the R event loop. metavizr should run without issue on rstudio desktop.
+```
+
+From the metavizr Vignette: You should now see a FacetZoom to explore the hierarchy of the metagenomic features from the MRexperiment object. To navigate the complex, hierarchical structure of the feature space, we made use of the FacetZoom visualization design and extended it to metagenomic data. Because of the limitations in the screen size and performance rendering big trees, this technique is an efficient visualization for navigating trees. The FacetZoom helps zoom in and out of trees and traverse subtrees. Every node in the tree has a state associated with it and are three possible states for a node 1) expand - use all subtree nodes during analysis 2) collapse - aggregate all nodes under the subtree to the selected node 3) remove - discard all nodes in the subtree for the analysis. The state of a node is also propagated to all its children and can be identified by the opacity of the node. Row level controls are available on the left side - to set the state of all nodes at a selected depth/taxonomic class of the hierarchy. The right hand side of the FacetZoom shows the location of the current subtree. Users can set states on the nodes to define a cut over the feature space. The cut defines how the count data is visualized in linked plots and charts. In addition to defining the cut, we also have a navigation bar to limit the range of features when querying count data. Navigation controls move the bar left/right and extend over the entire range of the current tree in the icicle. Each of these actions queries the underlying data structure and automatically propagates the changes to other visualizations in the workspace. When navigating outside the scope of the navigation bar, chevrons (left/right) appear on the navigation bar to help identify the current position. Hovering over a node highlights the entire lineage in the FacetZoom along with all other linked charts and plots.
+
+#TODO: Feature selection with metagenomeSeq and visual selections in metaviz
