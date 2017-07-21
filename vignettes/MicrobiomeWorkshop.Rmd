@@ -180,11 +180,11 @@ ExpressionSet2MRexperiment(eset)
 
 Set **phylogenetictree = TRUE** to include a phylogenetic tree in the `phyloseq` object (bioc-devel only):
 
-```{r}
+```{r, eval=isdevel}
 zeller.tree <- ExpressionSet2phyloseq( zeller.eset, phylogenetictree = TRUE)
 ```
 
-```{r}
+```{r, eval=isdevel}
 wt = UniFrac(zeller.tree, weighted=TRUE, normalized=FALSE, 
              parallel=FALSE, fast=TRUE)
 plot(hclust(wt), main="Weighted UniFrac distances")
@@ -240,6 +240,10 @@ For the MetaPhlAn2 bugs datasets (but not other data types), you gain a lot of p
 suppressPackageStartupMessages(library(phyloseq))
 zeller.pseq = ExpressionSet2phyloseq( zeller.eset )
 ```
+
+Note the following useful arguments to ExpressionSet2phyloseq:
+* `simplify`: use the most detailed level of the taxonomy for names (default=TRUE). Otherwise use the full taxonomy for names
+* `phylogenetictree`: Add the MetaPhlAn2 phylogenetic tree, so UniFrac distances can be calculated (default=TRUE). Bioc-devel only.
 
 # Visualization with Metavizr
 
