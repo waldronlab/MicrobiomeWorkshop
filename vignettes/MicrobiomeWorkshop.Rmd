@@ -244,42 +244,44 @@ Note the following useful arguments to ExpressionSet2phyloseq:
 
 # Visualization with Metavizr
 
-We can now examine the zeller dataset with Metavizr. This visualization tool allows interactive exploration of the taxonomic hierarchy and statistically-guided visual analysis. Specifically, metavizr enables feature selection through a navigation mechanism called FacetZoom. 
+We can now examine the zeller dataset with Metavizr. This visualization tool allows interactive exploration of the taxonomic hierarchy and statistically-guided visual analysis. Specifically, metavizr enables feature selection through a navigation mechanism called FacetZoom. We first create an MRexperiment for the zeller dataset using `ExpressionSet2MRexperiment`. For demonstration purposes in this workshop, we will subset the analysis to samples under 60 years old and either control or CRC study_condition.
 
 ```{r, eval=FALSE}
 zeller_MR_expr = ExpressionSet2MRexperiment(zeller.eset)
+zeller_MR_expr <- zeller_MR_expr[, which(pData(zeller_MR_expr)$age < 60)]
+zeller_MR_expr <- zeller_MR_expr[,-which(pData(zeller_MR_expr)$study_condition == "adenoma")]
 
 public_ipv4 <- try(httr::content(httr::GET("http://169.254.169.254/latest/meta-data/public-ipv4")), silent = TRUE)
 
 if(grepl("Timeout was reached", simpleMessage(public_ipv4))){
   app <- startMetaviz(host="http://metaviz-dev.cbcb.umd.edu")
 } else{
-  setMetavizStandalone()
-  app <- startMetavizStandalone(host=public_ipv4, daemonized=FALSE)
+  app <- startMetaviz(host="http://metaviz-dev.cbcb.umd.edu", ws_host = public_ipv4, daemonized = FALSE, try_ports = TRUE)
 }
 ```
 
 From the metavizr vignette: Once the browser is open we can visualize the metagenomic features from the zeller_MR_expr object. We use the `plot` method to do so. The `plot` function can take as input any of the classes registered with epivirData.
+
+*Bioconductor AMI note:* On rstudio-server version < 1.1.273, the user need to run the app$service() command after each user input on the UI. There is a bug with Rstudio-server interferring with the R event loop. metavizr should run without issue on rstudio desktop.
 
 ```{r, eval = FALSE}
 facetZoom <- app$plot(zeller_MR_expr, type = "InnerNodeCounts", datasource_name = "zeller", feature_order = colnames(fData(zeller_MR_expr)))
 app$service()
 ```
 
-*Bioconductor AMI note:* On rstudio-server version < 1.1.273, the user need to run the app$service() command after each user input on the UI. There is a bug with Rstudio-server interferring with the R event loop. metavizr should run without issue on rstudio desktop.
+From the metavizr Vignette: You should now see a FacetZoom to explore the hierarchy of the metagenomic features from the MRexperiment object. To navigate the complex, hierarchical structure of the feature space, we made use of the FacetZoom visualization design and extended it to metagenomic data. Because of the limitations in the screen size and performance rendering big trees, this technique is an efficient visualization for navigating trees. The FacetZoom helps zoom in and out of trees and traverse subtrees. Every node in the tree has a state associated with it and are three possible states for a node 1) expand - use all subtree nodes during analysis 2) collapse - aggregate all nodes under the subtree to the selected node 3) remove - discard all nodes in the subtree for the analysis. The state of a node is also propagated to all its children and can be identified by the opacity of the node. Row level controls are available on the left side - to set the state of all nodes at a selected depth/taxonomic class of the hierarchy. The right hand side of the FacetZoom shows the location of the current subtree. Users can set states on the nodes to define a cut over the feature space. The cut defines how the count data is visualized in linked plots and charts. In addition to defining the cut, we also have a navigation bar to limit the range of features when querying count data. Navigation controls move the bar left/right and extend over the entire range of the current tree in the icicle. Each of these actions queries the underlying data structure and automatically propagates the changes to other visualizations in the workspace. When navigating outside the scope of the navigation bar, chevrons (left/right) appear on the navigation bar to help identify the current position. Hovering over a node highlights the entire lineage in the FacetZoom along with all other linked charts and plots.
+
+We can now add a heatmap showing the count data from the MRexperiment. After the `app$service()` call and while 'Serving Epiviz, escape to continue interactive session...' is shown on the R command prompt, we can click on the center icon of the node label `P` on the left hand side of the FacetZoom. This will update the heatmap from showing counts at the Class level to show counts at the Phylum level. The message 'zeller_1  datasourceGroup caches cleared' should appear in the R session.
 
 ```{r, eval = FALSE}
 heatmap_plot <- app$chart_mgr$revisualize(chart_type = "HeatmapPlot", chart = facetZoom)
 app$service()
 ```
 
-From the metavizr Vignette: You should now see a FacetZoom to explore the hierarchy of the metagenomic features from the MRexperiment object. To navigate the complex, hierarchical structure of the feature space, we made use of the FacetZoom visualization design and extended it to metagenomic data. Because of the limitations in the screen size and performance rendering big trees, this technique is an efficient visualization for navigating trees. The FacetZoom helps zoom in and out of trees and traverse subtrees. Every node in the tree has a state associated with it and are three possible states for a node 1) expand - use all subtree nodes during analysis 2) collapse - aggregate all nodes under the subtree to the selected node 3) remove - discard all nodes in the subtree for the analysis. The state of a node is also propagated to all its children and can be identified by the opacity of the node. Row level controls are available on the left side - to set the state of all nodes at a selected depth/taxonomic class of the hierarchy. The right hand side of the FacetZoom shows the location of the current subtree. Users can set states on the nodes to define a cut over the feature space. The cut defines how the count data is visualized in linked plots and charts. In addition to defining the cut, we also have a navigation bar to limit the range of features when querying count data. Navigation controls move the bar left/right and extend over the entire range of the current tree in the icicle. Each of these actions queries the underlying data structure and automatically propagates the changes to other visualizations in the workspace. When navigating outside the scope of the navigation bar, chevrons (left/right) appear on the navigation bar to help identify the current position. Hovering over a node highlights the entire lineage in the FacetZoom along with all other linked charts and plots.
-
-Once we are done exploring the data, we can remove these charts by calling the chart manager.
+We can remove lineages and show counts at any level of the taxonomy by setting nodes states in the FacetZoom. Once we are done exploring the data, we can remove these charts by calling the chart manager.
 
 ```{r, eval=FALSE}
 app$chart_mgr$rm_all_charts()
-app$service()
 ```
 
 # Compute differential abundance with metagenomeSeq and use features selections in metaviz
@@ -289,13 +291,9 @@ Now we will use metagenomeSeq to compute differential abundance for the zeller d
 ```{r, eval=FALSE}
 # Removes counts and features all levels of the taxonomy except for the lowest level
 zeller_MR_expr <- zeller_MR_expr[-unname(which(is.na(fData(zeller_MR_expr)$Strain))),]
-```
 
-Also, to perform differential abundance testing, we remove samples with study_condition as adenoma in the dataset. A more flexible testing mechanism is in development for metagenomeSeq.
-
-```{r, eval=FALSE}
-zeller_MR_expr <- zeller_MR_expr[,which(pData(zeller_MR_expr)$study_condition == "adenoma")]
-zeller_sample_data <-  pData(zeller_MR_expr)
+# Remove the t__ from each leaf level feature in the MRexperiment counts data
+rownames(zeller_MR_expr) <- sapply(strsplit(rownames(zeller_MR_expr), "__"), function(i){unname(i)[2]})
 ```
 
 Now we can use the fitFeatureModel function to estimate log fold change for the features at the lowest level of the taxonomy, in this case Strain, between samples in the `control` and `crc` study conditions. We first normalize the count data using the cumulative sum scaling method.
@@ -305,12 +303,13 @@ Now we can use the fitFeatureModel function to estimate log fold change for the 
 zeller_MR_expr <-  cumNorm(zeller_MR_expr, p = 0.75)
 
 # Set model to study_condition and use the fitFeatureModel to test
+zeller_sample_data <-  pData(zeller_MR_expr)
 mod <-  model.matrix(~1+study_condition, data = zeller_sample_data)
 results_zeller <-  fitFeatureModel(zeller_MR_expr, mod)
 logFC_zeller <- MRcoefs(results_zeller, number = nrow(results_zeller))
 ```
 
-metagenomeSeq provides a variety of testing methods. We could also use the fitZig method to test for group and with gender as a covariate.
+metagenomeSeq provides a variety of testing methods. We could also use the fitZig method to test for study_condition controlling for gender.
 
 ```{r, eval=FALSE}
 mod_zig <-  model.matrix(~1+study_condition+gender, data = zeller_sample_data)
@@ -318,19 +317,18 @@ results_zeller_zig <-  fitZig(zeller_MR_expr, mod_zig)
 coefs_zeller_zig <- MRcoefs(results_zeller_zig, number = nrow(results_zeller_zig))
 ```
 
-We will use result from fitFeatureModel as it provides logFC estimates for the features at this level between samples in the control and crc groups. We can examine them in tabular form. We can also use these results to select feature names to remove from consideration in a Metaviz. After removing features below a logFC threshold, we can interactively explore the results for the remaining features at different levels of the hierarchy.
+We will use result from fitFeatureModel as it provides logFC estimates for the features at this level between samples in the control and crc groups. We can examine them in tabular form. We can also use these results to select feature names to remove from consideration in a Metaviz. After removing features using a logFC threshold and adjusted p-value cutoff, we can interactively explore the results for the remaining features at different levels of the hierarchy.
 
 ```{r, eval=FALSE}
 features <- rownames(logFC_zeller)
 
-featuresToKeep_names <- features[which(abs(logFC_zeller$logFC) > 3)]
+featuresToKeep_names <- features[which(logFC_zeller[which(abs(logFC_zeller$logFC) > 2),]$adjPvalues <.1)]
 featuresToKeep <- rep(2, length(featuresToKeep_names))
-# We need to remove the t__ from the feature names
-names(featuresToKeep) <-  sapply(strsplit(featuresToKeep_names, "__"), function(i){unname(i)[2]})
+names(featuresToKeep) <-  featuresToKeep_names
 
 featuresToRemove_names <- features[!(features %in% featuresToKeep_names)]
 featuresToRemove <- rep(0, length(featuresToRemove_names))
-names(featuresToRemove) <- sapply(strsplit(featuresToRemove_names, "__"), function(i){unname(i)[2]})
+names(featuresToRemove) <- featuresToRemove_names
 ```
 
 From the metavizr vignette: A metavizControl allows users to specify settings for operating over the MRexperiment object including data analysis such as normalization and log transform.  We create a metavizControl with the featureSelection as the nodes that were found to be differentially abundant and make those visible when creating Metaviz plots.  The rest of the settings in the metavizControl will use the default parameters.
@@ -339,13 +337,9 @@ From the metavizr vignette: A metavizControl allows users to specify settings fo
 control <- metavizr::metavizControl(featureSelection = c(featuresToKeep, featuresToRemove))
 ```
 
-Finally, we can add a new FacetZoom, heatmap, and stacked plot with the features of interest selected.
+Finally, we can add a new FacetZoom, heatmap, and stacked plot with the features of interest selected. Once the heatmap and stacked plot are added, we can navigate to the lowest level of the taxonomy and see the features removed from consideration.
 
 ```{r, eval=FALSE}
-
-# Remove the t__ from each leaf level feature in the MRexperiment counts data
-rownames(zeller_MR_expr) <- sapply(strsplit(rownames(zeller_MR_expr), "__"), function(i){unname(i)[2]})
-
 facetZoom <- app$plot(zeller_MR_expr, type = "LeafCounts", datasource_name="zeller_leaf_level", control = control, feature_order = colnames(fData(zeller_MR_expr)))
 app$service()
 heatmap <- app$chart_mgr$revisualize(chart_type = "HeatmapPlot", chart = facetZoom)
@@ -367,7 +361,7 @@ agg_results_zeller <-  fitFeatureModel(agg_zeller_MR_expr, agg_mod)
 agg_logFC_zeller <- MRcoefs(agg_results_zeller, number = nrow(agg_results_zeller))
 
 agg_features <- rownames(agg_logFC_zeller)
-agg_featuresToKeep_names <- features[which(abs(agg_logFC_zeller$logFC) > 1)]
+agg_featuresToKeep_names <- agg_features[which(agg_logFC_zeller[which(abs(agg_logFC_zeller$logFC) > 1),]$adjPValues <.1)]
 agg_featuresToKeep <- rep(2, length(agg_featuresToKeep_names))
 names(agg_featuresToKeep) <- agg_featuresToKeep_names
 
@@ -375,5 +369,6 @@ agg_featuresToRemove_names <- agg_features[!(agg_features %in% agg_featuresToKee
 agg_featuresToRemove <- rep(0, length(agg_featuresToRemove_names))
 names(agg_featuresToRemove) <- agg_featuresToRemove_names
 
+agg_selectionUpdate <- c(agg_featuresToKeep, agg_featuresToRemove)
 app$get_ms_object(facetZoom)$propagateHierarchyChanges(agg_selectionUpdate, request_with_labels = TRUE)
 ```
