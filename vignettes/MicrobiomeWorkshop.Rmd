@@ -43,7 +43,7 @@ cranpkgs=c("ggplot2","devtools","vegan","httr")
 BioCpkgs=c( "curatedMetagenomicData", "phyloseq")
 ghpkgs= "metavizr"
 allpkg <- c(cranpkgs, BioCpkgs, ghpkgs)
-sapply(allpkg, require, character.only = TRUE)
+suppressPackageStartupMessages(sapply(allpkg, require, character.only = TRUE))
 ```
 
 # `curatedMetagenomicData`
@@ -173,15 +173,17 @@ ExpressionSet2phyloseq(eset)
 ExpressionSet2MRexperiment(eset)
 ```
 
+Examples of `phyloseq` analyses using curatedMetagenomicData datasets are provided in the [curatedMetagenomicData vignette](http://bioconductor.org/packages/devel/data/experiment/vignettes/curatedMetagenomicData/inst/doc/curatedMetagenomicData.html). 
+
 ## phylogenetic trees and UniFrac distances
 
 Set **phylogenetictree = TRUE** to include a phylogenetic tree in the `phyloseq` object (bioc-devel only):
 
-```{r, eval=FALSE}
+```{r, eval=isdevel}
 zeller.tree <- ExpressionSet2phyloseq( zeller.eset, phylogenetictree = TRUE)
 ```
 
-```{r, eval=FALSE}
+```{r, eval=isdevel}
 wt = UniFrac(zeller.tree, weighted=TRUE, normalized=FALSE, 
              parallel=FALSE, fast=TRUE)
 plot(hclust(wt), main="Weighted UniFrac distances")
@@ -239,6 +241,7 @@ zeller.pseq = ExpressionSet2phyloseq( zeller.eset )
 ```
 
 Note the following useful arguments to ExpressionSet2phyloseq:
+
 * `simplify`: use the most detailed level of the taxonomy for names (default=TRUE). Otherwise use the full taxonomy for names
 * `phylogenetictree`: Add the MetaPhlAn2 phylogenetic tree, so UniFrac distances can be calculated (default=TRUE). Bioc-devel only.
 
