@@ -18,12 +18,12 @@ vignette: >
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(cache = TRUE)
-knitr::opts_chunk$set(eval = FALSE)
+knitr::opts_chunk$set(eval = TRUE)
 ```
 
 
 
-```{r NeededPackages}
+```{r NeededPackages, message=FALSE}
 cranpkgs=c("ggplot2","devtools","adaptiveGPCA","treelapse", "ade4","structSSI", "PMA","vegan", "ggrepel")
 BioCpkgs=c("dada2", "curatedMetagenomicData", "phyloseq", "DECIPHER","genefilter")
 ghpkgs= c("treeDA", "treelapse","metavizr")
@@ -46,10 +46,8 @@ if(!("treelapse"  %in% installed.packages()))
 #if(!("metavizr"  %in% installed.packages()))
 #devtools::install_github("epiviz/metavizr", build_vignettes = TRUE)
 
-sapply(c(cranpkgs, BioCpkgs, ghpkgs), require, character.only = TRUE)
-
+suppressPackageStartupMessages(sapply(c(cranpkgs, BioCpkgs, ghpkgs), require, character.only = TRUE))
 ```
-
 
 
 # dada2 theory
@@ -101,7 +99,7 @@ ps = subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
 
 The process of subsetting begins with the names of phylogenetic ranks:
 
-```{r, warning=FALSE,eval=FALSE}
+```{r, warning=FALSE}
 rank_names(ps )
 ```
 
@@ -110,7 +108,7 @@ rank_names(ps )
 
 The `r BiocStyle::Biocpkg("phyloseq")` package provides advanced pruning of taxa, such as the following which keeps only taxa that are among the most abundant 5% in at least five samples:
 
-```{r, warning=FALSE,eval=FALSE}
+```{r, warning=FALSE}
 keepotu = genefilter_sample(ps , filterfun_sample(topp(0.05)), A=5)
 summary(keepotu)
 subset_taxa(ps , keepotu)
@@ -122,50 +120,27 @@ Note that `r BiocStyle::Biocpkg("phyloseq")` also provides `topk()` for selectin
 
 The `r BiocStyle::Biocpkg("phyloseq")` package provides the `plot_heatmap()` function to create heatmaps using a variety of built-in dissimilarity metrics for clustering. Here, we apply the same abundance filter as above, keep only strain-level OTUs. This function supports a large number of distance and ordination methods, here we use Bray-Curtis dissimilarity for distance and PCoA as the ordination method for organizing the heatmap.
 
-```{r, warning=FALSE,eval=FALSE}
+```{r, warning=FALSE}
 plot_heatmap(ps, method="PCoA", distance="bray")
-```
-
-## Taxonomy Histogram
-
-Here we plot the top 20 most abundant species (not strains), defined by the sum of abundance across all samples in the dataset:
-
-```{r, warning=FALSE,eval=FALSE}
-ps.sp = subset_taxa(ps , !is.na(Species) & is.na(Strain))
-par(mar = c(20, 4, 0, 0) + 0.15) #increase margin size on the bottom
-barplot(sort(taxa_sums(ps.sp), TRUE)[1:20] / nsamples(ps.sp),
-        ylab = "Total counts", las = 2)
 ```
 
 ## Alpha Diversity Estimation
 
 The `r BiocStyle::Biocpkg("phyloseq")` package calculates numerous alpha diversity measures. Here we compare three diversity in the species-level data, stratifying by stool texture:
 
-```{r, warning=FALSE,eval=FALSE}
+```{r, warning=FALSE}
 alphas = c("Shannon", "Simpson", "InvSimpson")
 plot_richness(ps, measures = alphas)
 ```
 Let's compare these three alpha diversity measures:
 
-```{r, warning=FALSE,eval=FALSE}
-pairs( estimate_richness(loman.sp, measures = alphas) )
+```{r, warning=FALSE}
+pairs( estimate_richness(ps, measures = alphas) )
 ```
 
 ## Beta Diversity / Dissimilarity Clustering
 
 Numerous beta diversity / dissimilarity are provided by the `distance()` function when provided a `r BiocStyle::Biocpkg("phyloseq")` object, and these can be used for any kind of clustering or classification scheme. 
-
-For example, here is a hierarchical clustering dendrogram produced by the `hclust()` from the base R `stats` package with "Ward" linkage:
-
-Fixme:
-Probably want to change this to use of pheatmap or neatmap.
-Poor quality output.
-```{r, warning=FALSE,eval=FALSE}
-mydist = distance(loman.sp, method="bray")
-myhclust = hclust( mydist )
-plot(myhclust, main="Bray-Curtis Dissimilarity", 
-     method="ward.D", xlab="Samples", sub = "")
-```
 
 ## Data import
 
