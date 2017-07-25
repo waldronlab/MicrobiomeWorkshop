@@ -309,7 +309,7 @@ results_zeller <-  fitFeatureModel(zeller_MR_expr, mod)
 logFC_zeller <- MRcoefs(results_zeller, number = nrow(results_zeller))
 ```
 
-metagenomeSeq provides a variety of testing methods. We could also use the fitZig method to test for study_condition controlling for gender. fitZig adds posterior probabilities to the MRexperiment and so we create a separate MRexperiment to pass to that function. The metagenomeSeq package vignette has further details on the available tests implemented as well as other functions useful for analysis.
+metagenomeSeq provides a variety of testing methods. We could also use the fitZig method to test for study_condition controlling for gender. fitZig adds posterior probabilities to the MRexperiment and so we create a separate MRexperiment to pass to that function. 
 
 ```{r, eval=FALSE}
 # Creating a separate MRexperiment to pass to fitZig 
@@ -318,6 +318,7 @@ zig_zeller_MR_expr <- zig_zeller_MR_expr[, which(pData(zig_zeller_MR_expr)$age <
 zig_zeller_MR_expr <- zig_zeller_MR_expr[,-which(pData(zig_zeller_MR_expr)$study_condition == "adenoma")]
 zig_zeller_MR_expr <- zig_zeller_MR_expr[-unname(which(is.na(fData(zig_zeller_MR_expr)$Strain))),]
 rownames(zig_zeller_MR_expr) <- sapply(strsplit(rownames(zig_zeller_MR_expr), "__"), function(i){unname(i)[2]})
+zig_zeller_MR_expr <-  cumNorm(zig_zeller_MR_expr, p = 0.75)
 
 zig_zeller_sample_data <-  pData(zig_zeller_MR_expr)
 
@@ -325,6 +326,8 @@ mod_zig <-  model.matrix(~1+study_condition+gender, data = zig_zeller_sample_dat
 results_zeller_zig <-  fitZig(zig_zeller_MR_expr, mod_zig)
 coefs_zeller_zig <- MRtable(results_zeller_zig, number = nrow(results_zeller_zig))
 ```
+
+The metagenomeSeq package vignette has further details on the available tests implemented as well as other functions useful for analysis.
 
 We will use result from fitFeatureModel as it provides logFC estimates for the features at this level between samples in the control and crc groups. We can examine them in tabular form. We can also use these results to select feature names to remove from consideration in a Metaviz. After removing features using a logFC threshold and adjusted p-value cutoff, we can interactively explore the results for the remaining features at different levels of the hierarchy.
 
@@ -338,9 +341,10 @@ names(featuresToKeep) <-  featuresToKeep_names
 featuresToRemove_names <- features[!(features %in% featuresToKeep_names)]
 featuresToRemove <- rep(0, length(featuresToRemove_names))
 names(featuresToRemove) <- featuresToRemove_names
+featureSelection = c(featuresToKeep, featuresToRemove)
 ```
 
-We can add a new FacetZoom, heatmap, and stacked plot then selection features of interest. Once the heatmap and stacked plot are added, we can navigate to the lowest level of the taxonomy.
+We can add a new FacetZoom, heatmap, and stacked plot and then select features of interest. Once the heatmap and stacked plot are added, we can navigate to the lowest level of the taxonomy and see the features removed from consideration.
 
 ```{r, eval=FALSE}
 facetZoom <- app$plot(zeller_MR_expr, type = "LeafCounts", datasource_name="zeller_leaf_level", feature_order = colnames(fData(zeller_MR_expr)))
@@ -351,10 +355,9 @@ stackedPlot <- app$chart_mgr$revisualize(chart_type ="StackedLinePlot", chart = 
 app$service()
 ```
 
-We can then call `propagateHierarchyChanges` with the selected features to examine only features with a log fold change specified.
+Now we can call `propagateHierarchyChanges` with the features of interest. The Strain features should be removed that do not show differential abundance.
 
 ```{r, eval = FALSE}
-featureSelection = c(featuresToKeep, featuresToRemove)
 app$get_ms_object(facetZoom)$propagateHierarchyChanges(featureSelection, request_with_labels = TRUE)
 ```
 
