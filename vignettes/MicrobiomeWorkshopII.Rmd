@@ -41,9 +41,9 @@ if(any(!instp)) {
 }
 
 if(!("treeDA"  %in% installed.packages()))
-   devtools::install_github("jfukuyama/treeDA", dependencies = TRUE)
+   BiocInstaller::biocLite("jfukuyama/treeDA", dependencies = TRUE)
 if(!("treelapse"  %in% installed.packages()))
-    devtools::install_github("", dependencies = TRUE)
+   BiocInstaller::biocLite("krisrs1128/treelapse", dependencies = TRUE)
 
 suppressPackageStartupMessages(sapply(c(cranpkgs, BioCpkgs, ghpkgs), require, character.only = TRUE))
 ```
