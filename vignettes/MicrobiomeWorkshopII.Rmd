@@ -19,6 +19,7 @@ vignette: >
 ```{r setup, include=FALSE}
 library(knitr)
 knitr::opts_chunk$set(eval = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
 options(width = 98) 
 opts_chunk$set(message = FALSE, error = FALSE, warning = FALSE,
                cache = TRUE, fig.width = 8, fig.height = 7)
