@@ -4,6 +4,7 @@ abstract: >
  The second part of the workshop  demonstrates how to use `dada2` on raw reads, and analysis of these data using the `phyloseq`, `treeDA`, `adaptiveGPCA` packages for denoising, estimating differential abundance, ordinations. The `treelapse` and  `metavizr` packages allow browsing and interactive visualization of microbiome profiles. Together, these packages provide easily linked components for data acquisition and flexible analysis of 16S rRNA and whole metagenome shotgun microbiome profiles. At the end of this workshop, users will be able to access publicly available metagenomic data and to perform common statistical analyses of these and other data in Bioconductor.
 author: "Susan Holmes and Joey McMurdie"
 date: "July 24, 2017"
+bibliography: F1000Work.bib
 output:
   BiocStyle::html_document:
     number_sections: no
@@ -1254,3 +1255,6 @@ out.treeda = treeda(response = sample_data(AntibioticPhyloseq)$type,
 # Looking at longitudinal data in the presence of a tree using treelapse.
 
 [Tutorial to follow](http://statweb.stanford.edu/~kriss1/antibiotic.html)
+
+
+#References
