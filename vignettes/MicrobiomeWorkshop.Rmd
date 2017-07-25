@@ -312,8 +312,11 @@ logFC_zeller <- MRcoefs(results_zeller, number = nrow(results_zeller))
 metagenomeSeq provides a variety of testing methods. We could also use the fitZig method to test for study_condition controlling for gender.
 
 ```{r, eval=FALSE}
-mod_zig <-  model.matrix(~1+study_condition+gender, data = zeller_sample_data)
-results_zeller_zig <-  fitZig(zeller_MR_expr, mod_zig)
+zig_zeller_MR_expr <- zeller_MR_expr
+zig_zeller_sample_data <-  pData(zig_zeller_MR_expr)
+
+mod_zig <-  model.matrix(~1+study_condition+gender, data = zig_zeller_sample_data)
+results_zeller_zig <-  fitZig(zig_zeller_MR_expr, mod_zig)
 coefs_zeller_zig <- MRcoefs(results_zeller_zig, number = nrow(results_zeller_zig))
 ```
 
@@ -331,21 +334,20 @@ featuresToRemove <- rep(0, length(featuresToRemove_names))
 names(featuresToRemove) <- featuresToRemove_names
 ```
 
-From the metavizr vignette: A metavizControl allows users to specify settings for operating over the MRexperiment object including data analysis such as normalization and log transform.  We create a metavizControl with the featureSelection as the nodes that were found to be differentially abundant and make those visible when creating Metaviz plots.  The rest of the settings in the metavizControl will use the default parameters.
-
-```{r, eval=FALSE}
-control <- metavizr::metavizControl(featureSelection = c(featuresToKeep, featuresToRemove))
-```
-
 Finally, we can add a new FacetZoom, heatmap, and stacked plot with the features of interest selected. Once the heatmap and stacked plot are added, we can navigate to the lowest level of the taxonomy and see the features removed from consideration.
 
 ```{r, eval=FALSE}
-facetZoom <- app$plot(zeller_MR_expr, type = "LeafCounts", datasource_name="zeller_leaf_level", control = control, feature_order = colnames(fData(zeller_MR_expr)))
+facetZoom <- app$plot(zeller_MR_expr, type = "LeafCounts", datasource_name="zeller_leaf_level", feature_order = colnames(fData(zeller_MR_expr)))
 app$service()
 heatmap <- app$chart_mgr$revisualize(chart_type = "HeatmapPlot", chart = facetZoom)
 app$service()
 stackedPlot <- app$chart_mgr$revisualize(chart_type ="StackedLinePlot", chart = facetZoom)
 app$service()
+```
+
+```{r, eval = FALSE}
+featureSelection = c(featuresToKeep, featuresToRemove)
+app$get_ms_object(facetZoom)$propagateHierarchyChanges(featureSelection, request_with_labels = TRUE)
 ```
 
 We can also perform the same fitFeatureModel calculation with counts aggregated to another level of the taxonomy and propagate those changes to the existing visualizations. In this case we will aggregate counts to the Class level of the taxonomy and then keep only features that show a logFC greater than 1 between the two groups.
