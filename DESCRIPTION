@@ -22,6 +22,8 @@ Suggests:
   ggrepel,
   DECIPHER,
   genefilter,
+  randomForest,
+  gridExtra,
   BiocStyle,
   knitr,
   rmarkdown
