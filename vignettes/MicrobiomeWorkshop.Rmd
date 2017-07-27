@@ -303,7 +303,8 @@ Now we can use the fitFeatureModel function to estimate log fold change for the 
 
 ```{r, eval=FALSE}
 # Normalize counts using cummulative sum scaling method.
-zeller_MR_expr <-  cumNorm(zeller_MR_expr, p = 0.75)
+zeller_MR_expr <- filterData(zeller_MR_expr, present = 5)
+zeller_MR_expr <- cumNorm(zeller_MR_expr, p = 0.75)
 
 # Set model to study_condition and use the fitFeatureModel to test
 zeller_sample_data <-  pData(zeller_MR_expr)
@@ -321,7 +322,8 @@ zig_zeller_MR_expr <- zig_zeller_MR_expr[, which(pData(zig_zeller_MR_expr)$age <
 zig_zeller_MR_expr <- zig_zeller_MR_expr[,-which(pData(zig_zeller_MR_expr)$study_condition == "adenoma")]
 zig_zeller_MR_expr <- zig_zeller_MR_expr[-unname(which(is.na(fData(zig_zeller_MR_expr)$Strain))),]
 rownames(zig_zeller_MR_expr) <- sapply(strsplit(rownames(zig_zeller_MR_expr), "__"), function(i){unname(i)[2]})
-zig_zeller_MR_expr <-  cumNorm(zig_zeller_MR_expr, p = 0.75)
+zig_zeller_MR_expr <- filterData(zig_zeller_MR_expr, present = 5)
+zig_zeller_MR_expr <- cumNorm(zig_zeller_MR_expr, p = 0.75)
 
 zig_zeller_sample_data <-  pData(zig_zeller_MR_expr)
 
@@ -377,7 +379,7 @@ agg_results_zeller <-  fitFeatureModel(agg_zeller_MR_expr, agg_mod)
 agg_logFC_zeller <- MRcoefs(agg_results_zeller, number = nrow(agg_results_zeller))
 
 agg_features <- rownames(agg_logFC_zeller)
-agg_featuresToKeep_names <- agg_features[which(agg_logFC_zeller[which(abs(agg_logFC_zeller$logFC) > 1),]$adjPValues <.1)]
+agg_featuresToKeep_names <- agg_features[which(agg_logFC_zeller[which(abs(agg_logFC_zeller$logFC) > 1),]$adjPvalues <.1)]
 agg_featuresToKeep <- rep(2, length(agg_featuresToKeep_names))
 names(agg_featuresToKeep) <- agg_featuresToKeep_names
 
