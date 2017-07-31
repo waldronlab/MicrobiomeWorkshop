@@ -8,4 +8,4 @@ multivariate statistical analyses of these and other data in R/Bioconductor.
 
 # Associated slides
 
-Here are [the slides](https://github.com/waldronlab/presentations/blob/master/Passoli_2017-07-27_Bioc2017-MicrobiomeWorkshop.pptx) presented by Edoardo Passoli on `curatedMetagenomicData`, and Justin Wagner on `metavizr`.
+Here are [the slides](https://github.com/waldronlab/presentations/blob/master/Passoli_2017-07-27_Bioc2017-MicrobiomeWorkshop.pptx?raw=true) presented by Edoardo Passoli on `curatedMetagenomicData`, and Justin Wagner on `metavizr`.
