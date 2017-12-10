@@ -344,7 +344,7 @@ pairs( estimate_richness(loman.sp, measures = alphas) )
 Numerous beta diversity / dissimilarity are provided by the `distance()` function when provided a `r BiocStyle::Biocpkg("phyloseq")` object, and these can be used for any kind of clustering or classification scheme. For example, here is a hierarchical clustering dendrogram produced by the `hclust()` from the base R `stats` package with "Ward" linkage:
 
 ```{r, warning=FALSE}
-mydist = distance(loman.sp, method="bray")
+mydist = phyloseq::distance(loman.sp, method="bray")
 myhclust = hclust( mydist )
 plot(myhclust, main="Bray-Curtis Dissimilarity", 
      method="ward.D", xlab="Samples", sub = "")
@@ -366,66 +366,124 @@ plot_ordination(loman.sp, ordinated_taxa, color="stool_texture",
 plot_scree(ordinated_taxa, title="Screeplot")
 ```
 
-# Differential Abundance Analysis
+# Differential Abundance Analysis with DESeq2 and edgeR
 
-## Brief introduction to differential analysis and the negative binomial log-linear generalized linear model 
+## Brief introduction to differential abundance and the negative binomial log-linear generalized linear model 
 
-The negative binomial model models the the natural logarithm of the mean of counts (in this case, counts for each taxon), as a linear combination of the covariates (experimental conditions, exposures, etc.). Our interest is in estimating the coefficients (log fold changes (LFCs)).
+One of the most common goals in microbiome data analysis to determine which bugs are more or less abundant in a given experimental or exposure group, vs. a control or reference group. To do this, we use generalized linear models (GLMs), specifically with a log link and negative binomial error. 
 
-$ln(E[Y|x]) = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + ... + \beta_m x_m$
+This GLM models the logarithm of the mean of counts, as a linear combination of the covariates (experimental conditions, exposures, confounding variables, etc.). 
+
+$log_2(E[Y|x]) = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + ... + \beta_m x_m$
 
 $Y \sim{} NB(\mu, \sigma^2), \sigma^2 = \mu + \theta\mu^2$
 
-In the high dimensional setting, we have one model for each of the features (bugs etc.). We may have a small number of samples (usually many more features than samples), and some features may have very low counts. This makes estimation of independent models subject to high variance and therefore low power. DESeq2 and edgeR both address this by using empirical Bayes, which places a prior on the dispersion parameters, shrinking them towards the observed common dispersion. Their main difference lies in how they accomplish this. In addition to shrinking the dispersion estimates, DESeq2 also shrinks the coefficients. 
+In the context of differential abundance (DA), $Y$ corresponds to the (mean relative) abundance of given microbe, the $x$'s correspond to the exposures or experimental conditions. Our interest is in estimating the $\beta$ coefficients, which represent the difference in log2 relative abundance, or log fold changes (LFCs), for each feature (bug etc.).  `r BiocStyle::Biocpkg("DESeq2")` and `r BiocStyle::Biocpkg("edgeR")` are 2 software implementations of this approach.
+
+## Empirical Bayes for high dimensional GLMs
+
+The precision of estimates is highly dependent on the $\theta$ (dispersion) parameter. In the high dimensional setting, we have one model for each of the features (bugs etc.). We may have a small number of samples (usually many more features than samples), and some features may have very low counts. This means if we estimate each model independently, the models will be very imprecise (i.e. have large p-values). 
+
+However, we can address this by exploiting an assumption that the $\theta$ parameters will be similar (i.e. come from a common distribution) between all the features. To do this,  using empirical Bayes, which uses a prior on the dispersion parameters for each model based on the *common dispersion* across all models, shrinking their dispersion towards a common center. In other words, empirical Bayes allows the models for each feature to "borrow strength" from one another. Both `r BiocStyle::Biocpkg("DESeq2")` and `r BiocStyle::Biocpkg("edgeR")` use empirical Bayes to estimate the dispersions.
+
+Important similarities between DESeq2 and edgeR:
+* Both estimate negative binomial, log-linear GLMs
+* Both use empirical Bayes to shrink dispersion estimates
+* Both receive unnormalized counts, and internally account for sampling depth
+* Both make the assumption that few features are differentially abundant (but do so in a slightly different way)
+
+Important differences between DESeq2 and edgeR:
+DESeq2:
+
+* Automatically filters out lowly abundant features, optimized to maximize the number of DA features at user-specified $\alpha$.
+
+* Automatically removes outliers (See `?replaceOutliers` for details.)
+
+* Can shrink coefficients in addition to dispersions
+
+edgeR:
+
+* Does not automatically filter, so manual filtering is necessary
+
+* Uses *normalized scaling factors* to estimate *effective library size* -- this has a similar effect to DESeq2's coefficient shrinkage.
 
 ## DESeq2
 
-Both `DESeq2` and `edgeR` expect unnormalized counts as input. `DESeq2` uses the class `DESeqDataSet` as input, and has several convenience functions to convert data to this format. 
+Both `DESeq2` and `edgeR` expect unnormalized counts as input. They are normalized internally to account for differences in sequence depth. `DESeq2` uses the class `DESeqDataSet` as input, and has several convenience functions to convert data to this format. 
 
 
-```{r}
+```{r message=FALSE}
 suppressPackageStartupMessages(library(DESeq2))
 
-lowman.counts <- curatedMetagenomicData("LomanNJ_2013.metaphlan_bugs_list.stool",
+loman.counts <- curatedMetagenomicData("LomanNJ_2013.metaphlan_bugs_list.stool",
                                                                counts = TRUE,
-                                                               dryrun = FALSE )[[1]]
+                                                               dryrun = FALSE)[[1]]
+
+#keeping the rownames consistent so we can use the phyloseq taxonomy table later
+rownames(loman.counts) <- rownames( tax_table(loman.pseq) )
 ```
 
 We must remove samples with missing values in design variables before converting to a `DESeqDataSet`.
+
 ```{r}
-lowman.counts_na.omit <- lowman.counts[,!is.na(lowman.counts$stool_texture)]
+loman.counts_na.omit <- loman.counts[,!is.na(loman.counts$stool_texture)]
 ```
 
-Now we're ready create the `DESeqDataSet` object. This object consists of `countData`, a matrix of counts where rows are features and columns are samples, `colData`, the sample-level metadata, and `design`, which is the formula for the right-hand side of the linear model we wish to fit.
+Now we're ready create the `DESeqDataSet` object for input to `DESeq2`. This object consists of: 
 
-```{r}
-dds <- DESeqDataSetFromMatrix(countData = exprs(lowman.counts_na.omit),
-                              colData   = pData(lowman.counts_na.omit),
+* `countData`, a matrix of counts where rows are features and columns are samples 
+
+* `colData`, the sample-level metadata where columns are features and rows are samples, and
+
+* `design`, the formula for the right-hand side of the linear model we wish to fit
+
+```{r message=FALSE, warning=FALSE}
+dds <- DESeqDataSetFromMatrix(countData = exprs(loman.counts_na.omit),
+                              colData   = pData(loman.counts_na.omit),
                               design= ~ stool_texture)
 dds
 ```
 
-Even though `DESeq2` does automatic filtering, it can be helpful to prefilter features that have no (or very few) counts, to decrease computational load. At the very least we would like features to have more than 1 count.
+Even though `DESeq2` does automatic filtering of lowly-expressed features, it is recommended to prefilter features that have no (or very few) counts, to decrease computational load. At the very least we would like features to have more than 1 count.
 
 ```{r}
-#pre filtering
 dds <- dds[ rowSums(counts(dds)) > 1, ]
+dim(dds)
 ```
 
 Now we're ready to fit the linear model.
 
-The `results` function generates the results table, and contains arguments to control how this is generated. This is the step where automatic filtering is performed. Note:
+The `DESeq` function estimates dispersions,  fits models, and calculates Wald statistics. One important argument is `betaPrior`, which determines whether to estimate shrunken coefficients -- we set it to `TRUE`.
 
-* The contrast argument specifies what comparison we would like to see log fold changes (LFCs), p-values, etc. for. There are a number of ways to specify this, we will use the simplest, which is the name of a factor in the design formula, the name of the numerator level,  and the name of the denominator level. 
+```{r message=FALSE}
+dds <- DESeq(dds, betaPrior = TRUE)
+dds
+```
 
-* Default alpha is 0.1, we set it to 0.05. It's important to set alpha in this step in `DESeq2` because automatic filtering tuning parameters are selected to maximize the number of significant LFCs at your specified alpha.
+The `results` function performs automatic filtering and p-value adjustment, and generates the results table. Note some important arguments:
+
+* `contrast` specifies what comparison we would like to see log fold changes (LFCs), p-values, etc. for. There are a number of ways to specify this, we will use the simplest, which is the name of a factor in the design formula, the name of the numerator level,  and the name of the denominator level. 
+
+* `alpha` is not only our statistical significance cutoff, but also determines how filtering is performed. Remember that filtering is optimized to maximize the number of signficant features for a given alpha. The default is 0.1; we set it to 0.05.
+
+* `addMLE = TRUE`: this tells `results` to provide the unshrunken coefficients in addition to the shrunken ones, which we will use for demonstration purposes.
 
 ```{r}
-dds <- DESeq(dds, betaPrior = TRUE)
 res <- results(dds, 
                contrast = c("stool_texture", "watery","smooth"),
                alpha=0.05, 
                addMLE = TRUE)
+str(res)
+```
+
+The results table is contained in the `listData` element of the `DESeqResults` object returned by `results`. 
+```{r}
+str(res@listData)
+```
+with columns accessible by the `$` operator:
+
+```{r}
+head(res$log2FoldChange)
 ```
 
 We can get some basic tallies using the summary function:
@@ -433,129 +491,139 @@ We can get some basic tallies using the summary function:
 ```{r}
 summary(res)
 ```
-Overall, how many bugs were diffferentially abundant at FDR < 0.05?
+
+
+A histogram of raw p-values can be a good sanity check. A spike at the left hand side indicates a signal.
 
 ```{r}
-sum(res$padj < 0.05, na.rm=TRUE)
+hist(res$pvalue, breaks=100)
 ```
 
-
-MA Plot
+The MA-plot shows the LFCs against the mean of normalized counts. Compare the shrunken to the unshrunken coefficients, and notice that the most shrinkage occurs in features with low counts. This is what we want -- it avoids overestimating coefficients for which there is insufficient information.
 
 ```{r}
-DESeq2::plotMA(res, alpha=0.05, MLE=FALSE)
+par(mfrow=c(1,2))
+DESeq2::plotMA(res, alpha=0.05, MLE=FALSE, main="Shrunken LFCs")
+DESeq2::plotMA(res, alpha=0.05, MLE=TRUE, main="Unshrunken LFCs")
 ```
 
-One way to visualize the significant LFCs is to use a dot plot.
+One nice way to visualize the LFCs with FDR less than alpha is to use a dot plot. We can use the taxonomy table from the `phyloseq` object to group by higher taxonomic levels.
 
 ```{r}
-#get into a data frame
+#assemble the plotting data in a data frame
 plot_dat <- data.frame(tax = res@rownames, LFC = res$log2FoldChange, FDR = res$padj)
 #add taxonomy
 plot_dat <- cbind(plot_dat, tax_table(loman.pseq)[plot_dat$tax,])
 #keep FDR < 0.05
 plot_dat <- subset(plot_dat, FDR < 0.05)
 
-ggplot(plot_dat, aes(x=LFC, y=Genus, color=Phylum, alpha=FDR)) +
-  geom_point() +
-  scale_alpha_continuous(range=c(1,0.01))
 
+ggplot(plot_dat, aes(x=LFC, y=reorder(Genus,as.numeric(Phylum)), color=Phylum)) +
+  geom_point() +
+  theme_bw() +
+  labs(y=NULL, x="log2 fold change")
 
 ```
 
 
 ## edgeR
+
+The `edgeR` workflow is similar to DESeq2, with a few key differences.
 ```{r}
 suppressPackageStartupMessages(library(edgeR))
-
-#create design matrix
-sample_data(loman.pseq)$stool_texture %<>% factor %>% relevel("smooth")
-dsg.mtrx <- model.matrix(~stool_texture, data=data.frame( sample_data( loman.pseq ) ))
-dsg.mtrx
 ```
 
-edgeR does not handle missing values, so you must handle them manually.
+Like `DESeq2`, `edgeR` requires that we manually delete samples with missing values in design variables.
 
 ```{r}
-#drop NAs
-loman.pseq_na.omit <- prune_samples(samples = rownames(dsg.mtrx), x = loman.pseq) 
-
-#one alternative is to use IP weighting
-
-
+loman.counts_na.omit <- loman.counts[,!is.na(loman.counts$stool_texture)]
+dim(loman.counts_na.omit)
 ```
-
+`edgeR` needs the count matrix to be an `edgeR::DGEList` object.
 ```{r}
-#edgeR needs the otu table to be in the form of a DGEList object
-dge <- DGEList(counts = as( otu_table( loman.pseq_na.omit ), "matrix"))
+counts <- exprs(loman.counts_na.omit )
+dge <- DGEList(counts=counts, group = loman.counts_na.omit$stool_texture)
 show(dge)
 ```
 
-Manual filtering 
+Unlike `DESeq2`, `edgeR` does not do any automatic filtering of features. A recommendation is to delete features that have less than 1 read per million in *n* samples, where *n* is the size of the smallest comparison group.
+
+```{r}
+n <- min(table(loman.counts_na.omit$stool_texture))
+n
+```
+```{r}
+keep <- rowSums( cpm( counts ) > 1 ) >= n 
+dge <- dge[keep, ]
+dim(dge)
+```
+
+
+
+Unlike in `DESeq2`, where we specify the comparison we want to make with the `contrast` argument, in `edgeR` we specify the comparison by generating a design matrix. The design matrix is formula corresponds to the right-hand side of our linear model formula: 
 
 ```{r}
 
+#set reference level
+loman.counts$stool_texture <- relevel(factor(loman.counts$stool_texture), "smooth")
+
+#create the design matrix
+dsg.mtrx <- model.matrix(~stool_texture, data=loman.counts)
+head(dsg.mtrx)
+
 ```
 
-edgeR estimates the dispersion for all OTUs simultaneously
+Next we estimate the dispersions. Whereas `DESeq2` does this automatically in the `DESeq` call, we must do it manually in `edgeR` using the `estimateDisp` function.
 
 ```{r}
 #add dispersion estimates to the DGEList object
 dge <- estimateDisp(dge, design = dsg.mtrx)
 show(dge)
-
-#the library sizes are the sums over all counts for each sample
-all(colSums(as(otu_table(loman.pseq_na.omit),"matrix")) == dge$samples$lib.size)
-
-#the tagwise dispersion shrinks dispersion estimates towards the trended estimates
-plot(density(dge$trended.dispersion), xlim=c(0,6), col=5, main="Tagwise and trended dispersion")
-lines(density(dge$tagwise.dispersion), col=6)
-legend(x=4, y=4, legend=c("Trended","Tagwise"), col=c(5,6), lty=1)
 ```
 
-Fitting the model
+Now we are ready to fit the linear models. Notice that it is much faster than `DESeq2`.
 
 ```{r}
 #fit the model
-fit <- glmFit(dge, dsg.mtrx) #dispersion defaults to tagwise
-lrt_bloody <- glmLRT(fit, coef=2)
+fit <- glmFit(dge, dsg.mtrx) 
 lrt_watery <- glmLRT(fit, coef=3)
 
 #calculate FDR
-results_bloody <- topTags(lrt_bloody, n=nrow(lrt_bloody$table))
 results_watery <- topTags(lrt_watery, n=nrow(lrt_watery$table))
 
 ```
 
-Exploratory histogram of p-values
+`edgeR` provides an MA-plot via `plotSmear`, but we must manually provide the differentially abundant features.
 
 ```{r}
-p_values <- c(lrt_bloody$table$PValue, lrt_watery$table$PValue)
-hist(p_values, breaks=100, col="skyblue3")
+de.tags <- rownames(results_watery)[results_watery$table$FDR < 0.05]
+plotSmear(dge, de.tags = de.tags)
 ```
 
-If you're happy with your model, plot the logFCs
+
+Again, it's good to look at a histogram of p-values. If there's a signal, there should be a spike on the left-hand side. 
+
+```{r}
+hist(lrt_watery$table$PValue, breaks=100)
+```
+
+If you're happy with your model, plot the LFCs as in `DESeq2`.
 
 ```{r}
 
 library(ggplot2)
-library(magrittr)
-
-plot_data <- rbind(data.frame(results_bloody$table, tax = rownames(results_bloody$table), coef="Bloody", stringsAsFactors = FALSE),
-                   data.frame(results_watery$table, tax = rownames(results_watery$table), coef="Watery", stringsAsFactors = FALSE))
+tax_names <- rownames(results_watery$table)
+plot_dat <- data.frame(results_watery$table, tax = tax_names, coef="Watery", stringsAsFactors = FALSE)
 
 #attach the taxonomy table, for grouping by taxonomy
-tax_df <- data.frame(tax_table(loman.pseq_na.omit), tax= rownames(tax_table(loman.pseq_na.omit)), stringsAsFactors = FALSE)
-plot_data %<>% left_join(tax_df, by="tax")
+plot_dat <- cbind(plot_dat, tax_table(loman.pseq)[tax_names,])
 
 #filter by alpha
-plot_data <- plot_data[plot_data$FDR < 0.05, ]
+plot_dat <- plot_dat[plot_dat$FDR < 0.05, ]
 
 #plot
-ggplot(plot_data, aes(x=logFC, y=tax, color=Phylum)) +
+ggplot(plot_dat, aes(x=logFC, y=reorder(Genus, as.numeric(Phylum)), color=Phylum)) +
   geom_point(size=2) +
-  facet_wrap(~coef)
-
-
+  labs(y=NULL, x="log2 fold change") +
+  theme_bw()
 ```
-
