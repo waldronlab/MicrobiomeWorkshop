@@ -31,7 +31,7 @@ biocLite("waldronlab/MicrobiomeWorkshop", dependencies=TRUE)
 ```
 
 
-Load all needed packages:
+Load all needed packages. These are listed in the [DESCRIPTION](https://github.com/waldronlab/MicrobiomeWorkshop/blob/master/DESCRIPTION) file: currently 
 ```{r, eval=FALSE}
 library(MicrobiomeWorkshop)
 ```
@@ -409,7 +409,7 @@ edgeR:
 
 ## DESeq2
 
-Both `DESeq2` and `edgeR` expect unnormalized counts as input. They are normalized internally to account for differences in sequence depth. `DESeq2` uses the class `DESeqDataSet` as input, and has several convenience functions to convert data to this format. 
+Both DESeq2 and edgeR expect unnormalized counts as input: specifically, **do not** rarefy or calculate relative abundance by dividing by sequencing depth. They are normalized internally to account for differences in sequence depth. `DESeq2` uses the class `DESeqDataSet` as input, and has several convenience functions to convert data to this format. 
 
 
 ```{r message=FALSE}
@@ -517,7 +517,7 @@ plot_dat <- cbind(plot_dat, tax_table(loman.pseq)[plot_dat$tax,])
 #keep FDR < 0.05
 plot_dat <- subset(plot_dat, FDR < 0.05)
 
-
+library(ggplot2)
 ggplot(plot_dat, aes(x=LFC, y=reorder(Genus,as.numeric(Phylum)), color=Phylum)) +
   geom_point() +
   theme_bw() +
@@ -610,8 +610,6 @@ hist(lrt_watery$table$PValue, breaks=100)
 If you're happy with your model, plot the LFCs as in `DESeq2`.
 
 ```{r}
-
-library(ggplot2)
 tax_names <- rownames(results_watery$table)
 plot_dat <- data.frame(results_watery$table, tax = tax_names, coef="Watery", stringsAsFactors = FALSE)
 
