@@ -5,7 +5,7 @@ sudo: false
 cache: packages
 r: bioc-devel
 warnings_are_errors: false
-bioc_use_devel: true
+bioc_use_devel: false
 r_build_args: --keep-empty-dirs --no-resave-data
 r_check_args: --timings
 
