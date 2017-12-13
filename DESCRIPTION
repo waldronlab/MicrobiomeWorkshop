@@ -2,7 +2,7 @@ Package: MicrobiomeWorkshop
 Title: A workshop on microbiome data analysis in Bioconductor
 Description: This workshop covers databases and tools for accessing and analysing
   microbiome data in Bioconductor. It was first developed for Bioc2017.
-Version: 0.2
+Version: 0.3
 Depends:
   R (>= 3.4.0),
   Biobase (>= 2.38.0),
@@ -18,6 +18,7 @@ Suggests:
   knitr,
   rmarkdown
 Author:
+  Audrey Renson,
   Edoardo Pasolli,
   Lucas Schiffer,
   Nicola Segata,
