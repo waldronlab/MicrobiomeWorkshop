@@ -5,38 +5,24 @@ Description: This workshop covers databases and tools for accessing and analysin
 Version: 0.2
 Depends:
   R (>= 3.4.0),
-  Biobase (>= 2.36.0)
-Suggests:
+  Biobase (>= 2.38.0),
   curatedMetagenomicData,
   phyloseq,
-  metagenomeSeq,
-  metavizr,
-  dada2,
   ggplot2,
   vegan,
-  httr,
-  adaptiveGPCA,
-  ade4,
-  structSSI,
-  PMA,
-  ggrepel,
-  DECIPHER,
   genefilter,
-  randomForest,
-  gridExtra,
+  DESeq2,
+  edgeR
+Suggests:
   BiocStyle,
   knitr,
   rmarkdown
 Author:
-  Susan Holmes,
   Edoardo Pasolli,
-  Paul J. McMurdie II,
-  Joseph Nathaniel Paulson,
   Lucas Schiffer,
   Nicola Segata,
-  Justin Wagner,
   Levi Waldron
-Maintainer: Bioconductor Microbiome Special Interest Group <lwaldron.research@gmail.com>
+Maintainer: Levi Waldron <lwaldron.research@gmail.com>
 License: file LICENSE
 LazyData: true
 VignetteBuilder: knitr
