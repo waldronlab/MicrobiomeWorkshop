@@ -384,16 +384,21 @@ In the context of differential abundance (DA), $Y$ corresponds to the (mean rela
 
 The precision of estimates is highly dependent on the $\theta$ (dispersion) parameter. In the high dimensional setting, we have one model for each of the features (bugs etc.). We may have a small number of samples (usually many more features than samples), and some features may have very low counts. This means if we estimate each model independently, the models will be very imprecise (i.e. have large p-values). 
 
-However, we can address this by exploiting an assumption that the $\theta$ parameters will be similar (i.e. come from a common distribution) between all the features. To do this,  using empirical Bayes, which uses a prior on the dispersion parameters for each model based on the *common dispersion* across all models, shrinking their dispersion towards a common center. In other words, empirical Bayes allows the models for each feature to "borrow strength" from one another. Both `r BiocStyle::Biocpkg("DESeq2")` and `r BiocStyle::Biocpkg("edgeR")` use empirical Bayes to estimate the dispersions.
+However, we can address this by exploiting an assumption that the $\theta$ parameters will be similar (i.e. come from a common distribution) between all the features. To do this, we can use a method called empirical Bayes, which uses a prior on the dispersion parameters for each model based on the *common dispersion* across all models, shrinking their dispersion towards a common center. In other words, empirical Bayes allows the models for each feature to "borrow strength" from one another. Both `r BiocStyle::Biocpkg("DESeq2")` and `r BiocStyle::Biocpkg("edgeR")` use empirical Bayes to estimate the dispersions.
 
 Important similarities between `r BiocStyle::Biocpkg("DESeq2")` and `r BiocStyle::Biocpkg("edgeR")`:
+
 * Both estimate negative binomial, log-linear GLMs
+
 * Both use empirical Bayes to shrink dispersion estimates
-* Both receive unnormalized counts, and internally account for sampling depth
+
+* Both receive unnormalized counts, and internally normalize for sequencing depth and composition
+
 * Both make the assumption that few features are differentially abundant (but do so in a slightly different way)
+
 * Both easily integrate corrections for multiple testing, particularly false discovery rate (FDR)
 
-Important differences between `DESeq2` and `edgeR`:
+Important differences between `DESeq2` and `edgeR` (defaults):
 
 `DESeq2`:
 
@@ -401,13 +406,17 @@ Important differences between `DESeq2` and `edgeR`:
 
 * Automatically removes outliers (See `?replaceOutliers` for details.)
 
-* Can shrink coefficients in addition to dispersions
+* Incorporates shrinkage of coefficients (although not a default)
+
 
 `edgeR`:
 
 * Does not automatically filter, so manual filtering is necessary
 
-* Uses *normalized scaling factors* to estimate *effective library size* -- this has a similar effect to `DESeq2`'s coefficient shrinkage.
+* Does not automatically remove outliers
+
+* No simple coefficient shrinkage, but generally not necessary
+
 
 ## DESeq2
 
@@ -438,7 +447,7 @@ loman.counts_na.omit <- loman.counts[,!is.na(loman.counts$stool_texture)]
 
 * `colData`, the sample-level metadata where columns are features and rows are samples, and
 
-* `design`, the formula for the right-hand side of the linear model we wish to fit. For simplicity we will use one variable, `stool_texture`, but you can include additional variables (e.g. batch effects, confounders) using the `+` operator (see `?formula` for help)
+* `design`, the formula for the right-hand side of the linear model we wish to fit. For simplicity we will use one variable, `stool_texture`, but you can seamlessly include additional variables (e.g. batch effects, confounders) using the `+` operator (see `?formula` for help)
 
 ```{r message=FALSE, warning=FALSE}
 dds <- DESeqDataSetFromMatrix(countData = exprs(loman.counts_na.omit),
@@ -457,7 +466,7 @@ dim(dds)
 
 Now we're ready to fit the linear model.
 
-The `DESeq()` function estimates dispersions,  fits models, and calculates Wald statistics. One important argument is `betaPrior`, which determines whether to estimate shrunken coefficients -- we set it to `TRUE`.
+The `DESeq()` function estimates dispersions,  fits models, and calculates Wald statistics. One important argument is `betaPrior`, which determines whether to estimate shrunken coefficients -- we set it to `TRUE`. 
 
 ```{r message=FALSE}
 dds <- DESeq(dds, betaPrior = TRUE)
@@ -466,11 +475,13 @@ dds
 
 The `results()` function performs automatic filtering and p-value adjustment, and generates the results table. Note some important arguments:
 
-* `contrast` specifies what comparison we would like to see log fold changes (LFCs), p-values, etc. for. There are a number of ways to specify this, we will use the simplest, which is the name of a factor in the design formula, the name of the numerator level,  and the name of the denominator level. 
+* `contrast` specifies what comparison we would like to see log fold changes (LFCs), p-values, etc. for. There are a number of ways to specify this; we will use the simplest, which is a character vector with (1) the name of a factor in the design formula, (2) the name of the numerator level,  and (3) the name of the denominator level (in that order). 
 
-* `alpha` is not only our statistical significance cutoff, but also determines how filtering is performed. Remember that filtering is optimized to maximize the number of signficant features for a given alpha. The default is 0.1; we set it to 0.05.
+* `alpha` is not only our statistical significance cutoff, but also determines how filtering is performed: the filtering threshold is automatically chosen to maximize the number of signficant features for a given alpha. (see `independentFiltering` argument of `?results`) The default is 0.1; we set it to 0.05.
 
 * `addMLE = TRUE`: this tells `results()` to provide the unshrunken coefficients in addition to the shrunken ones, which we will use for demonstration purposes.
+
+Let's say we want to compare watery to smooth:
 
 ```{r}
 res <- results(dds, 
@@ -496,6 +507,7 @@ We can get some basic tallies using the `summary()` function:
 summary(res)
 ```
 
+`LFC > 0 (up)` and `LFC < 0` down tell us the number of features found differentially abundant in each direction. `outliers` tells us that `DESeq2` did not identify any outliers to filter out. `low counts` tells us that `DESeq2` automatically filtered out 245 features with low counts. 
 
 A histogram of raw p-values can be a good sanity check. A spike at the left hand side indicates a signal.
 
@@ -503,7 +515,7 @@ A histogram of raw p-values can be a good sanity check. A spike at the left hand
 hist(res$pvalue, breaks=100)
 ```
 
-`plotMA()` gives a plot of the LFCs by overall abundance of each feature. 
+`plotMA()` gives the MA plot, a plot of the LFCs by overall abundance of each feature. 
 
 * The argument `alpha=0.05` tells `plotMA()` that we want LFCs with FDR < 0.05 colored red. 
 
@@ -562,11 +574,16 @@ n
 ```
 ```{r}
 keep <- rowSums( cpm( counts ) > 1 ) >= n 
-dge <- dge[keep, ]
+dge <- dge[keep, , keep.lib.sizes=FALSE ]
 dim(dge)
 ```
 
+This deleted 731 - 282 = 449 features, quite a few more than `DESeq2`'s default. 
 
+With `edgeR`, we also need to manually calculate the normalization factors using `calcNormFactors` (`DESeq` does this automatically.)
+```{r}
+dge <- calcNormFactors(dge)
+```
 
 Unlike in `DESeq2`, where we specify the comparison we want to make with the `contrast` argument, in `edgeR` we specify the comparison by generating a design matrix using `model.matrix()`. The design matrix formula corresponds to the right-hand side of our linear model formula, just as we used when we defined the `DESeqDataSetFromMatrix` in `DESeq2`.   
 
@@ -581,15 +598,16 @@ head(dsg.mtrx)
 
 ```
 
-Next we estimate the dispersions. Whereas `DESeq2` does this automatically in the `DESeq` call, we must do it manually in `edgeR` using the `estimateDisp()` function.
+Next we calculate the dispersions. Whereas `DESeq2` does this automatically in the `DESeq` call, we must do it manually in `edgeR` using the `estimateDisp()` function.
 
 ```{r}
 #add dispersion estimates to the DGEList object
+
 dge <- estimateDisp(dge, design = dsg.mtrx)
 show(dge)
 ```
 
-`glmFit()` estimates the linear models, and `glmLRT` performs hypothesis tests. The argument `coef=3` tells `glmLRT()` that we want to estimate p-values for 'stool_texture=watery', the 3rd coefficient in the model (including the intercept).
+`glmFit()` estimates the linear models, and `glmLRT` performs hypothesis tests. The argument `coef=3` tells `glmLRT()` that we want to estimate p-values for **stool_texture=watery**, the 3rd coefficient in the model (including the intercept).
 
 ```{r}
 #fit the model
@@ -611,7 +629,7 @@ results_watery
 
 ```{r}
 de.tags <- rownames(results_watery)[results_watery$table$FDR < 0.05]
-plotSmear(dge, de.tags = de.tags)
+plotSmear(lrt_watery, de.tags = de.tags, cex = .4)
 ```
 
 
