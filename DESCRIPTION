@@ -5,7 +5,7 @@ Description: This workshop covers databases and tools for accessing and analysin
 Version: 0.3
 Depends:
   R (>= 3.4.0),
-  Biobase (>= 2.38.0),
+  Biobase (>= 2.36.0),
   curatedMetagenomicData,
   phyloseq,
   ggplot2,
