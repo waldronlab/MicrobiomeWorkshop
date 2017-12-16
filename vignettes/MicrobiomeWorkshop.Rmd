@@ -27,7 +27,12 @@ Installing all necessary packages can be accomplished by the following command:
 
 ```{r, eval=FALSE}
 library(BiocInstaller)
-biocLite("waldronlab/MicrobiomeWorkshop", dependencies=TRUE)
+biocLite("waldronlab/MicrobiomeWorkshop", build_vignettes=TRUE, dependencies=TRUE)
+```
+
+Then you should be able to view the compiled vignette:
+```{r, eval=FALSE}
+vignette("MicrobiomeWorkshop")
 ```
 
 
