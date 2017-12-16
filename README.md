@@ -9,11 +9,17 @@ Presentation materials from Dec 15, 2017 NYC R/Bioconductor Meetup: https://gith
 
 # Installation
 
-Try this to install the workshop materials and open the vignette (source is in the [vignettes](./vignettes) directory:
+Try this to install the workshop materials and open the vignette (source is in the [vignettes](./vignettes) directory):
+
+If you do not yet have Bioconductor and devtools installed:
 ```
 source("https://bioconductor.org/biocLite.R")
 biocLite()
 install.packages("devtools")
+```
+
+Then workshop-specific materials:
+```
 BiocInstaller::biocLite("waldronlab/curatedMetagenomicData", dependencies=TRUE)
 BiocInstaller::biocLite("GenomeInfoDbData", dependencies=TRUE)
 BiocInstaller::biocLite("waldronlab/microbiomeworkshop", dependencies=TRUE, build_vignettes=TRUE)
