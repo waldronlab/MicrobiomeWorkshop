@@ -6,3 +6,17 @@ Bioconductor provides significant resources for microbiome data acquisition, ana
 multivariate statistical analyses of these and other data in R/Bioconductor.
 
 Presentation materials from Dec 15, 2017 NYC R/Bioconductor Meetup: https://github.com/waldronlab/MicrobiomeWorkshop/issues/7
+
+# Installation
+
+Try this to install the workshop materials and open the vignette (source is in the [vignettes](./vignettes) directory:
+```
+source("https://bioconductor.org/biocLite.R")
+biocLite()
+install.packages("devtools")
+BiocInstaller::biocLite("waldronlab/curatedMetagenomicData", dependencies=TRUE)
+BiocInstaller::biocLite("GenomeInfoDbData", dependencies=TRUE)
+BiocInstaller::biocLite("waldronlab/microbiomeworkshop", dependencies=TRUE, build_vignettes=TRUE)
+library(MicrobiomeWorkshop)
+vignette("MicrobiomeWorkshop")
+```
