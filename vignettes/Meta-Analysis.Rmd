@@ -1,0 +1,262 @@
+---
+title: "Meta-Analysis"
+author: "Lucas Schiffer"
+date: "December 15, 2017"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    fig_height: 7
+    fig_retina: NULL
+    number_sections: true
+    code_folding: "hide"
+vignette: >
+  %\VignetteIndexEntry{Exploratory Data Analysis}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+# `knitr` Options
+
+```{r}
+knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(fig.align = "center")
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(results = "hold")
+```
+
+# `R` Libraries
+
+```{r}
+library(curatedMetagenomicData)
+library(magrittr)
+library(DT)
+library(dplyr)
+library(ggplot2)
+library(tibble)
+```
+
+# `DT` Options
+
+```{r}
+options(DT.options = list(dom = 'Bfrtip', buttons = c('copy', 'csv', 'excel')))
+```
+
+# Combined Metadata
+
+## Data Structure
+
+```{r}
+combined_metadata[1:1000, 1:4] %>%
+  datatable(rownames = FALSE, extensions = 'Buttons')
+```
+
+## Metadata Variables
+
+```{r}
+combined_metadata %>%
+  colnames()
+```
+
+# Mega-Analysis
+
+## `select` Function
+
+```{r}
+not_all_na <- function(x) {
+    all(!is.na(x))
+}
+```
+
+## BMI Metadata
+
+```{r}
+bmi_metadata <- 
+  combined_metadata %>%
+  filter(!is.na(BMI)) %>%
+  filter(body_site == "stool") %>%
+  select_if(not_all_na)
+
+bmi_metadata %>%
+  select(dataset_name, sampleID, BMI) %>%
+  datatable(rownames = FALSE)
+```
+
+## BMI Distribution
+
+```{r}
+bmi_metadata %>%
+  ggplot(aes(BMI)) +
+  geom_density() +
+  theme_minimal()
+```
+
+## Download Data
+
+```{r}
+bmi_datasets <-
+  unique(bmi_metadata$dataset_name) %>%
+  paste0(".metaphlan_bugs_list.stool") %>%
+  curatedMetagenomicData(dryrun = FALSE)
+
+bmi_datasets[1]
+bmi_datasets[[1]]
+```
+
+## Specify Clades
+
+```{r}
+beaumont_taxa <- c("k__Bacteria|p__Firmicutes|c__Clostridia|o__Clostridiales",
+                   "k__Bacteria|p__Firmicutes|c__Clostridia|o__Clostridiales|f__Lachnospiraceae",
+                   "k__Bacteria|p__Firmicutes|c__Clostridia|o__Clostridiales|f__Ruminococcaceae",
+                   "k__Bacteria|p__Firmicutes|c__Clostridia|o__Clostridiales|f__Ruminococcaceae|g__Ruminococcus")
+```
+
+## `data.frame` from `ExpressionSet` Objects
+
+```{r}
+eset_df <- function(eset_obj, eset_name) {
+    eset_name <- strsplit(eset_name, "\\.")[[1]][1]
+    
+    exprs_df <-
+        eset_obj[featureNames(eset_obj) %in% beaumont_taxa, ] %>%
+        exprs() %>%
+        t() %>%
+        data.frame() %>%
+        rownames_to_column(var = "SampleID")
+    
+    bmi_vec <- eset_obj$BMI
+    
+    data.frame(eset_name, exprs_df, bmi_vec)
+}
+```
+
+## Make a Meta `data.frame`
+
+```{r}
+dataset_names <- names(bmi_datasets)
+
+meta_df <-
+    mapply(eset_df, bmi_datasets, dataset_names, SIMPLIFY = FALSE) %>%
+    Reduce(rbind, .) %>%
+    set_colnames(c("Study", "SampleID", "o__Clostridiales", "f__Lachnospiraceae", "f__Ruminococcaceae", "g__Ruminococcus", "BMI")) %>%
+    filter(!is.na(BMI))
+
+meta_df %>%
+  datatable(rownames = FALSE)
+```
+
+## Function to Extract Linear Models
+
+```{r}
+model_df <- function(lm_obj, model_name) {
+  estimate <- 
+    coef(lm_obj) %>%
+    data.frame() %>%
+    extract(2, )
+  
+  lower_ci <- 
+    confint(lm_obj) %>%
+    data.frame() %>%
+    extract(2, 1)
+  
+  upper_ci <- 
+    confint(lm_obj) %>%
+    data.frame() %>%
+    extract(2, 2)
+  
+  data.frame(model_name, estimate, lower_ci, upper_ci)
+}
+```
+
+## Linear Models
+
+```{r, warning=FALSE}
+o__Clostridiales <- 
+  meta_df %$%
+  lm(BMI ~ o__Clostridiales) %>%
+  model_df("o__Clostridiales")
+
+f__Lachnospiraceae <- 
+  meta_df %$%
+  lm(BMI ~ f__Lachnospiraceae) %>%
+  model_df("f__Lachnospiraceae")
+
+f__Ruminococcaceae <- 
+  meta_df %$%
+  lm(BMI ~ f__Ruminococcaceae) %>%
+  model_df("f__Ruminococcaceae")
+
+g__Ruminococcus <- 
+  meta_df %$%
+  lm(BMI ~ g__Ruminococcus) %>%
+  model_df("g__Ruminococcus")
+
+box_plot_order <-
+  c("o__Clostridiales", "f__Lachnospiraceae", "f__Ruminococcaceae",
+    "g__Ruminococcus") %>%
+  rev()
+
+box_plot_df <-
+  list(o__Clostridiales, f__Lachnospiraceae, f__Ruminococcaceae, 
+       g__Ruminococcus) %>%
+  Reduce(full_join, .) %>%
+  mutate(model_name = ordered(model_name, levels = box_plot_order))
+```
+
+## Box Plot
+
+```{r}
+box_plot_df %>%
+  ggplot(aes(model_name, estimate)) +
+  geom_point() +
+  geom_pointrange(aes(ymin = lower_ci, ymax = upper_ci)) +
+  geom_hline(aes(yintercept = 0), color = "gray", linetype = "dashed") +
+  coord_flip() +
+  theme_minimal() +
+  theme(axis.title.y = element_blank())
+```
+
+# Meta-Analysis
+
+
+```{r, warning=FALSE}
+o__Clostridiales <- 
+  meta_df %$%
+  lm(BMI ~ o__Clostridiales + Study) %>%
+  model_df("o__Clostridiales")
+
+f__Lachnospiraceae <- 
+  meta_df %$%
+  lm(BMI ~ f__Lachnospiraceae + Study) %>%
+  model_df("f__Lachnospiraceae")
+
+f__Ruminococcaceae <- 
+  meta_df %$%
+  lm(BMI ~ f__Ruminococcaceae + Study) %>%
+  model_df("f__Ruminococcaceae")
+
+g__Ruminococcus <- 
+  meta_df %$%
+  lm(BMI ~ g__Ruminococcus + Study) %>%
+  model_df("g__Ruminococcus")
+
+box_plot_df <-
+  list(o__Clostridiales, f__Lachnospiraceae, f__Ruminococcaceae, 
+       g__Ruminococcus) %>%
+  Reduce(full_join, .) %>%
+  mutate(model_name = ordered(model_name, levels = box_plot_order))
+```
+
+## Box Plot
+
+```{r}
+box_plot_df %>%
+  ggplot(aes(model_name, estimate)) +
+  geom_point() +
+  geom_pointrange(aes(ymin = lower_ci, ymax = upper_ci)) +
+  geom_hline(aes(yintercept = 0), color = "gray", linetype = "dashed") +
+  coord_flip() +
+  theme_minimal() +
+  theme(axis.title.y = element_blank())
+```
