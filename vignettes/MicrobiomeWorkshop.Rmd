@@ -17,7 +17,7 @@ vignette: >
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(cache = TRUE)
-isdevel <- Biobase::package.version("Biobase") > 2.37
+isdevel <- Biobase::package.version("Biobase") > 2.41
 ```
 
 
@@ -26,8 +26,9 @@ isdevel <- Biobase::package.version("Biobase") > 2.37
 Installing all necessary packages can be accomplished by the following command:
 
 ```{r, eval=FALSE}
-library(BiocInstaller)
-biocLite("waldronlab/MicrobiomeWorkshop", build_vignettes=TRUE, dependencies=TRUE)
+library(BiocManager)
+install("waldronlab/MicrobiomeWorkshop", build_vignettes=TRUE, 
+        dependencies=TRUE)
 ```
 
 Then you should be able to view the compiled vignette:
@@ -71,7 +72,6 @@ These datasets are documented in the reference manuals of the [release](http://b
 Use of the resources in `curatedMetagenomicData` is simplified with the use of Bioconductor's ExperimentHub platform, which allows for the accessing of data through an intuitive interface. First, `curatedMetagenomicData` is installed using *BiocInstaller* and then called as a library - the process allows for the user to simply call datasets as functions because the package is aware of the resources present in ExperimentHub S3 buckets. 
 
 ```{r, message=FALSE}
-# BiocInstaller::biocLite("curatedMetagenomicData")  #Bioconductor version
 suppressPackageStartupMessages(library(curatedMetagenomicData))
 ```
 
@@ -81,7 +81,7 @@ The manually curated metadata for all available samples are provided in a single
 
 ```{r eval=FALSE}
 ?combined_metadata
-View(combined_metadata)
+View(data.frame(combined_metadata))
 ```
 
 ```{r}
@@ -101,7 +101,7 @@ zeller.eset = ZellerG_2014.metaphlan_bugs_list.stool()
 
 The following creates a list of two `ExpressionSet` objects providing the BritoIL_2016 and Castro-NallarE_2015 oral cavity taxonomic profiles (this method works in release or devel, but these datasets are available in devel only). See a complete list of available datasets in the PDF manual.
 
-```{r, message=FALSE, results='hide', eval = isdevel}
+```{r, message=FALSE, results='hide'}
 oral <- c("BritoIL_2016.metaphlan_bugs_list.oralcavity",
           "Castro-NallarE_2015.metaphlan_bugs_list.oralcavity")
 esl <- curatedMetagenomicData(oral, dryrun = FALSE)
@@ -120,7 +120,7 @@ curatedMetagenomicData("*metaphlan_bugs_list.stool*", dryrun = TRUE)
 
 The following merges the two oral cavity datasets downloaded above into a single ExpressionSet (devel only). 
 
-```{r, eval=isdevel}
+```{r}
 eset <- mergeData(esl)
 eset
 ```
@@ -181,7 +181,7 @@ ExpressionSet2MRexperiment(zeller.eset)
 
 This also works on the merged **eset** object from above:
 
-```{r, eval=isdevel}
+```{r}
 ExpressionSet2phyloseq(eset)
 ExpressionSet2MRexperiment(eset)
 ```
@@ -206,11 +206,11 @@ Note the following useful arguments to ExpressionSet2phyloseq:
 
 Set **phylogenetictree = TRUE** to include a phylogenetic tree in the `phyloseq` object (bioc-devel only):
 
-```{r, eval=isdevel}
+```{r}
 zeller.tree <- ExpressionSet2phyloseq( zeller.eset, phylogenetictree = TRUE)
 ```
 
-```{r, eval=isdevel}
+```{r}
 wt = UniFrac(zeller.tree, weighted=TRUE, normalized=FALSE, 
              parallel=FALSE, fast=TRUE)
 plot(hclust(wt), main="Weighted UniFrac distances")
