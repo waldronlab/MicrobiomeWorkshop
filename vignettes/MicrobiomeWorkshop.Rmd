@@ -1,27 +1,79 @@
----
-title: "Workshop on microbiome data package in Bioconductor"
-abstract: >
-  This component of the workshop introduces `curatedMetagenomicData`, a resource providing uniformly 
-  processed taxonomic and metabolic functional profiles for more than 6,000 whole metagenome shotgun sequencing samples from 26 publicly available studies, including the Human Microbiome Project, along with curated participant data. The `curatedMetagenomicData` package includes functions for converting to objects for use with the `phyloseq` package for taxonomy-aware analysis (see MicrobiomeWorkshopII.Rmd). 
-output:
-  BiocStyle::html_document:
-    number_sections: no
-    toc: yes
-    toc_depth: 4
-vignette: >
-    %\VignetteIndexEntry{MicrobiomeWorkshop}
-    %\VignetteEngine{knitr::rmarkdown}
-    %\VignetteEncoding{UTF-8}
----
+## Working with open-source Human Microbiome Project Data phases 1 (HMP) and 2 (iHMP): Efficient Data Access and Analysis Workflow
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(cache = TRUE)
-isdevel <- Biobase::package.version("Biobase") > 2.41
-```
+## Instructors names and contact information
+
+1. Levi Waldron (@LeviWaldron1), Graduate School of Public Health and Health Policy, City University of New York, New York, NY. 
+email: Levi.Waldron@sph.cuny.edu
+
+2. Ni Zhao, Department of Biostatistics, Johns Hopkins University, Baltimore, MD. 
+email: nzhao10@jhu.edu
+
+3. Ekaterina Smirnova (@katiasmirn), Department of Biostatistics, Virginia Commonwealth University, Richmond, VA. email: ekaterina.smirnova@vcuhealth.org
+
+## Workshop Description
+
+The composition of microbial species in a human body is essential for maintaining human health, and it is associated with a number of diseases including obesity, bowel inflammatory disease, and bacterial vaginosis.  Over the last decade, microbiome data analysis  almost entirely shifted towards using samples taken directly from various sites of human body and  to explore a  large number of microbes using 16S or whole metagenome sequencing. This technological shift has led to a radical change  in the data collected and led to the creation  of the  Human Microbiome Project (HMP) in 2008. With the growth and success of the microbiomics field, the size and complexity, and availability of the microbiome data in any given experiment have increased exponentially.  Publicly-available data sets from amplicon sequencing of two 16S ribosomal RNA variable regions, with extensive controlled-access participant data, provide a reference for ongoing microbiome studies. However, utilization of these data sets can be hindered by the complex bioinformatic steps required to access, import, decrypt, and merge the various components in formats suitable for ecological and statistical analysis. 
+
+The main goal of this workshop is to provide a much-needed tutorial on downloading, understanding, and analyzing  the publicly-available HMP data. We will describe the two packages, HMP16SData and HMP2Data, that provide the comprehensive tutorial on the analysis of Phase 1 and 2 of the HMP project, respectively. These packages provide count data for both 16S ribosomal RNA variable regions, integrated with phylogeny, taxonomy, public participant data, and controlled participant data for authorized researchers, using standard integrative Bioconductor data objects.  As such, these packages provide the first comprehensive publicly-available tool for working with  microbiome data collected at different body sites (e.g., fecal, nasal, vaginal) coupled with other omics approaches (e.g., cytokines, whole metagenome), and is conducted longitudinally on multiple subjects at multiple visits. By removing bioinformatic hurdles of data access and management, HMP16SData and HMP2Data  enable researchers with only basic R skills to quickly analyze HMP data. This allows  studying the dynamics of microbial composition over the disease progression, discovering  disease-specific microbial biomarkers, and understanding the role of  microbiome in connection to other omics measurements.  
+
+This workshop will consist of the series  on the instructors-led live demos presented together with  the brief lecture materials and statistical methods review when necessary. Completely worked out examples are available through the HMP16SData and HMP2Data package vignettes. 
 
 
-# Install packages
+
+### Pre-requisites
+
+* Basic knowledge of R syntax
+* Familiarity with the microbiome data 
+* Familiarity with alpha and beta diversity in the context of microbiome data analysis
+* Familiarity with principal components and principal coordinates analysis
+
+Background reading:
+
+* Schiffer L, Azhar R, Shepherd L, Ramos M, Geistlinger L, Huttenhower C, Dowd JB, Segata N, Waldron L (2019). "HMP16SData: Efficient Access to the Human Microbiome Project through Bioconductor." American Journal of Epidemiology. doi: 10.1093/aje/kwz006.
+
+
+
+### Workshop Participation
+
+Workshop participants are expected to bring a lap top, download HMP16SData and HMP2Data packages in advance, and be able to execute  R commands throughout workshop. 
+
+### _R_ / _Bioconductor_ packages used
+
+HMP16SData
+
+HMP2Data
+
+### Time outline 
+
+| Activity                     | Time |
+|------------------------------|------|
+| HMP16SData                   | 10m  |
+| HMP2Data                     | 10m  |
+| Microbiome Analyses          | 15m  |
+| Multi-omics data integration | 15m  |
+
+## Workshop goals and objectives
+
+The main purpose of this workshop is to help researchers interested in public microbiome data to start using  the HMP16SData and HMP2Data packages.  
+
+### Learning goals
+
+* understand the goals of  HMP projects and the studies available through the HMP DAC portal 
+* download and use HMP data packages
+* understand the difference between phase 1 and phase 2 projects
+* understand principles of -omics data integration and visualization
+
+### Learning objectives
+
+* install HMP data packages and access vignettes
+* download HMP data to produce analyses illustrated in package vignettes
+* create sample summary statistics
+* create alpha and beta diversity plots
+* understand longitudinal patterns and examine microbiome diversity changes  
+* integrate 16S and cytokines data using co-inertia analyses techniques 
+* learn capturing patterns across -omics data sets of different structure
+
+## Install packages
 
 Installing all necessary packages can be accomplished by the following command:
 
@@ -42,623 +94,3 @@ Load all needed packages. These are listed in the [DESCRIPTION](https://github.c
 library(MicrobiomeWorkshop)
 ```
 
-# `curatedMetagenomicData`
-
-`curatedMetagenomicData` provides 6 types of data for each dataset:
-
-1. Species-level taxonomic profiles, expressed as relative abundance from kingdom to strain level
-2. Presence of unique, clade-specific markers
-3. Abundance of unique, clade-specific markers
-4. Abundance of gene families
-5. Metabolic pathway coverage
-6. Metabolic pathway abundance
-
-Types 1-3 are generated by 
-[MetaPhlAn2](http://huttenhower.sph.harvard.edu/metaphlan2); 4-6 are generated by [HUMAnN2](http://huttenhower.sph.harvard.edu/humann2).
-
-Currently, `curatedMetagenomicData` provides:
-
-* Now more than 6,000 samples from 26 datasets, primarily of the human gut but including body sites profiled in the Human Microbiome Project
-* Processed data from whole-metagenome shotgun metagenomics, with manually-curated metadata, as integrated and documented Bioconductor 
-ExpressionSet objects
-* ~80 fields of specimen metadata from original papers, supplementary files, and websites, with manual curation to standardize annotations
-* Processing of data through the [MetaPhlAn2](http://huttenhower.sph.harvard.edu/metaphlan2) pipeline for taxonomic abundance, and [HUMAnN2](http://huttenhower.sph.harvard.edu/humann2) pipeline for metabolic analysis
-* This effort required analyzing ~100TB of raw sequencing data
-
-These datasets are documented in the reference manuals of the [release](http://bioconductor.org/packages/release/data/experiment/html/curatedMetagenomicData.html) or [devel](http://bioconductor.org/packages/devel/data/experiment/html/curatedMetagenomicData.html) versions of Bioconductor. The development version has approximately twice as many datasets and significantly more functionality. The AMI provided at the Bioc2017 workshop runs the development version of Bioconductor; see http://bioconductor.org/developers/how-to/useDevel/ for instructions on upgrading your own machine to the development version and switching between devel and release.
-
-## Using `curatedMetagenomicData` Resources
-
-Use of the resources in `curatedMetagenomicData` is simplified with the use of Bioconductor's ExperimentHub platform, which allows for the accessing of data through an intuitive interface. First, `curatedMetagenomicData` is installed using *BiocInstaller* and then called as a library - the process allows for the user to simply call datasets as functions because the package is aware of the resources present in ExperimentHub S3 buckets. 
-
-```{r, message=FALSE}
-suppressPackageStartupMessages(library(curatedMetagenomicData))
-```
-
-## Available samples and metadata
-
-The manually curated metadata for all available samples are provided in a single table `combined_metadata`:
-
-```{r eval=FALSE}
-?combined_metadata
-View(data.frame(combined_metadata))
-```
-
-```{r}
-table(combined_metadata$antibiotics_current_use)
-table(combined_metadata$disease)
-```
-
-
-## Accessing datasets
-
-Individual data projects can be fetched via per-dataset functions or the `curatedMetagenomicData()` function. A function call to a dataset name returns a Bioconductor ExpressionSet object:
-
-```{r, message=FALSE}
-suppressPackageStartupMessages(library(curatedMetagenomicData))
-zeller.eset = ZellerG_2014.metaphlan_bugs_list.stool()
-```
-
-The following creates a list of two `ExpressionSet` objects providing the BritoIL_2016 and Castro-NallarE_2015 oral cavity taxonomic profiles (this method works in release or devel, but these datasets are available in devel only). See a complete list of available datasets in the PDF manual.
-
-```{r, message=FALSE, results='hide'}
-oral <- c("BritoIL_2016.metaphlan_bugs_list.oralcavity",
-          "Castro-NallarE_2015.metaphlan_bugs_list.oralcavity")
-esl <- curatedMetagenomicData(oral, dryrun = FALSE)
-esl
-esl[[1]]
-esl[[2]]
-```
-
-And the following would provide all stool metaphlan datasets if `dryrun = FALSE` were set:
-
-```{r, eval=TRUE}
-curatedMetagenomicData("*metaphlan_bugs_list.stool*", dryrun = TRUE)
-```
-
-### Merging multiple datasets
-
-The following merges the two oral cavity datasets downloaded above into a single ExpressionSet (devel only). 
-
-```{r}
-eset <- mergeData(esl)
-eset
-```
-
-This works for any number of datasets. The function will not stop you from merging different data types (e.g. metaphlan bugs lists with gene families), but you probably don't want to do that.
-
-## Using `ExpressionSet` Objects
-
-All datasets are represented as `ExpressionSet` objects because of the integrative nature of the class and its ability to bind data and metadata. There are three main functions, from the `Biobase` package, that provide access to experiment-level metadata, subject-level metadata, and the data itself.
-
-To access the experiment-level metadata the `experimentData()` function is used to return a `MIAME` (Minimum Information About a Microarray Experiment) object.
-
-```{r}
-experimentData( zeller.eset )
-```
-
-To access the subject-level metadata the `pData()` function is used to return a `data.frame` containing subject-level variables of study.
-
-```{r}
-head( pData( zeller.eset ) )
-```
-
-To access the data itself (in this case relative abundance), the `exprs()` function returns a variables by samples (rows by columns) numeric matrix. Note the presence of "synthetic" clades at all levels of the taxonomy, starting with kingdom, e.g. k__bacteria here:
-
-```{r}
-exprs( zeller.eset )[1:6, 1:5]  #first 6 rows and 5 columns
-```
-
-## Estimating Absolute Raw Count Data
-
-Absolute raw count data can be estimated from the relative count data by multiplying the columns of the `ExpressionSet` data by the number of reads for each sample, as found in the `pData` column "number_reads". For demo purposes you could (but don't have to!) do this manually by dividing by 100 and multiplying by the number of reads:
-
-```{r}
-zeller.counts = sweep(exprs( zeller.eset ), 2, zeller.eset$number_reads / 100, "*")
-zeller.counts = round(zeller.counts)
-zeller.counts[1:6, 1:5]
-```
-
-or just set the `counts` argument in `curatedMetagenomicData()` to `TRUE`:
-
-```{r}
-zeller.eset2 = curatedMetagenomicData("ZellerG_2014.metaphlan_bugs_list.stool",
-                                     counts = TRUE, 
-                                     dryrun = FALSE)[[1]]
-all.equal(exprs(zeller.eset2), zeller.counts)
-```
-
-Bioconductor provides further documentation of the ExpressionSet class and has published an excellent [introduction](https://tinyurl.com/ExpressionSetIntro).
-
-## Creating `phyloseq` and `metagenomeSeq` objects
-
-`curatedMetagenomicData` provides convenience functions for converting its *ExpressionSet* objects to *phyloseq::phyloseq* and *metagenomeSeq:MRExperiment* class objects for downstream analysis. For example, to convert the **zeller.eset** object to these two classes:
-
-```{r}
-ExpressionSet2phyloseq(zeller.eset)
-ExpressionSet2MRexperiment(zeller.eset)
-```
-
-This also works on the merged **eset** object from above:
-
-```{r}
-ExpressionSet2phyloseq(eset)
-ExpressionSet2MRexperiment(eset)
-```
-
-Examples of `phyloseq` analyses using curatedMetagenomicData datasets are provided in the [curatedMetagenomicData vignette](http://bioconductor.org/packages/devel/data/experiment/vignettes/curatedMetagenomicData/inst/doc/curatedMetagenomicData.html). 
-
-## Compatibility with `phyloseq` package
-
-For the MetaPhlAn2 bugs datasets (but not other data types), you gain phylogeny-aware, ecological analysis and plotting by conversion to a `r BiocStyle::Biocpkg("phyloseq")` class object. `r BiocStyle::Biocpkg("curatedMetagenomicData")` provides the `ExpressionSet2phyloseq()` function to make this easy:
-
-```{r, warning=FALSE}
-suppressPackageStartupMessages(library(phyloseq))
-zeller.pseq = ExpressionSet2phyloseq( zeller.eset )
-```
-
-Note the following useful arguments to ExpressionSet2phyloseq:
-
-* `simplify`: use the most detailed level of the taxonomy for names (default=TRUE). Otherwise use the full taxonomy for names
-* `phylogenetictree`: Add the MetaPhlAn2 phylogenetic tree, so UniFrac distances can be calculated (default=TRUE). 
-
-## Phylogenetic trees and UniFrac distances
-
-Set **phylogenetictree = TRUE** to include a phylogenetic tree in the `phyloseq` object (bioc-devel only):
-
-```{r}
-zeller.tree <- ExpressionSet2phyloseq( zeller.eset, phylogenetictree = TRUE)
-```
-
-```{r}
-wt = UniFrac(zeller.tree, weighted=TRUE, normalized=FALSE, 
-             parallel=FALSE, fast=TRUE)
-plot(hclust(wt), main="Weighted UniFrac distances")
-```
-
-# Exploratory Data Analysis
-
-## Exploratory analysis of E. coli prevalence
-
-Here's a direct, exploratory analysis of *E. coli* prevalence in the zeller dataset using the `ExpressionSet` object. More elegant solutions will be provided later using subsetting methods provided by the `r BiocStyle::Biocpkg("phyloseq")` package, but for users familiar with `grep()` and the `ExpressionSet` object, such manual methods may suffice.
-
-First, which *E. coli*-related taxa are available?
-
-```{r}
-grep("coli", rownames(zeller.eset), value=TRUE)
-```
-
-Create a vector of *E. coli* relative abundances. This `grep` call with a "$" at the end selects the only row that ends with "s__Escherichia_coli":
-```{r}
-x = exprs( zeller.eset )[grep("s__Escherichia_coli$", rownames( zeller.eset)), ]
-summary( x )
-```
-
-This could be plotted as a histogram:
-```{r}
-hist( x, xlab = "Relative Abundance", main="Prevalence of E. Coli",
-      breaks="FD")
-```
-
-# Basic `phyloseq` analysis
-
-## Components of a phyloseq object
-
-This  `r BiocStyle::Biocpkg("phyloseq")` objects contain 3 components, with extractor functions hinted at by its show method:
-
-```{r}
-#LomanNJ_2013
-
-loman.pseq <- ExpressionSet2phyloseq( LomanNJ_2013.metaphlan_bugs_list.stool() )
-```
-
-`otu_table()` returns the same thing as `exprs( loman.eset )` did, the Operational Taxanomic Unit (OTU) table. Here are the first 6 rows and 5 columns:
-
-```{r, warning=FALSE}
-otu_table( loman.pseq )[1:6, 1:5]
-```
-
-The same patient or participant data that was available from  `pData( loman.eset )` is now availble using `sample_data()` on 
-the `r BiocStyle::Biocpkg("phyloseq")` object:
-
-```{r, warning=FALSE}
-sample_data( loman.pseq )[1:6, 1:5]
-```
-
-But this object also is aware of the taxonomic structure, which will enable the powerful subsetting methods of the `r BiocStyle::Biocpkg("phyloseq")` package.
-
-```{r, warning=FALSE}
-head( tax_table( loman.pseq ) )
-```
-
-## Subsetting / Pruning
-
-The process of subsetting begins with the names of taxonomic ranks:
-
-```{r, warning=FALSE}
-rank_names( loman.pseq )
-```
-
-Taxa can be filtered by these rank names. For example, to return an object with only species and strains:
-
-```{r, warning=FALSE}
-subset_taxa( loman.pseq, !is.na(Species))
-```
-
-To keep only phylum-level data (not class or finer, and not kingdom-level):
-
-```{r}
-subset_taxa( loman.pseq, is.na(Class) & !is.na(Phylum))
-```
-
-Or to keep only Bacteroidetes phylum. Note that taxa names have been shortened from the rownames of the `ExpressionSet` object, for nicer plotting.
-
-```{r}
-loman.bd = subset_taxa( loman.pseq, Phylum == "Bacteroidetes")
-head( taxa_names( loman.bd ) )
-```
-
-## Advanced Pruning
-
-The `r BiocStyle::Biocpkg("phyloseq")` package provides advanced pruning of taxa, such as the following which keeps only taxa that are among the most abundant 5% in at least five samples:
-
-```{r, warning=FALSE}
-keepotu = genefilter_sample(loman.pseq, filterfun_sample(topp(0.05)), A=5)
-summary(keepotu)
-subset_taxa(loman.pseq, keepotu)
-```
-
-Note that `r BiocStyle::Biocpkg("phyloseq")` also provides `topk()` for selecting the most abundant `k` taxa, and other functions for advanced pruning of taxa.
-
-## Taxonomy Heatmap
-
-The `r BiocStyle::Biocpkg("phyloseq")` package provides the `plot_heatmap()` function to create heatmaps using a variety of built-in dissimilarity metrics for clustering. Here, we apply the same abundance filter as above, keep only strain-level OTUs. This function supports a large number of distance and ordination methods, here we use Bray-Curtis dissimilarity for distance and PCoA as the ordination method for organizing the heatmap.
-
-```{r, warning=FALSE}
-loman.filt = subset_taxa(loman.pseq, keepotu & !is.na(Strain))
-plot_heatmap(loman.filt, method="PCoA", distance="bray")
-```
-
-## Taxonomy Histogram
-
-Here we plot the top 20 most abundant species (not strains), defined by the sum of abundance across all samples in the dataset:
-
-```{r, warning=FALSE}
-loman.sp = subset_taxa(loman.pseq, !is.na(Species) & is.na(Strain))
-par(mar = c(20, 4, 0, 0) + 0.15) #increase margin size on the bottom
-barplot(sort(taxa_sums(loman.sp), TRUE)[1:20] / nsamples(loman.sp),
-        ylab = "Total counts", las = 2)
-```
-
-## Alpha Diversity Estimation
-
-The `r BiocStyle::Biocpkg("phyloseq")` package calculates numerous alpha diversity measures. Here we compare three diversity in the species-level data, stratifying by stool texture:
-
-```{r, warning=FALSE}
-alphas = c("Shannon", "Simpson", "InvSimpson")
-plot_richness(loman.sp, "stool_texture", measures = alphas)
-```
-Let's compare these three alpha diversity measures:
-
-```{r, warning=FALSE}
-pairs( estimate_richness(loman.sp, measures = alphas) )
-```
-
-## Beta Diversity / Dissimilarity Clustering
-
-Numerous beta diversity / dissimilarity are provided by the `distance()` function when provided a `r BiocStyle::Biocpkg("phyloseq")` object, and these can be used for any kind of clustering or classification scheme. For example, here is a hierarchical clustering dendrogram produced by the `hclust()` from the base R `stats` package with "Ward" linkage:
-
-```{r, warning=FALSE}
-mydist = phyloseq::distance(loman.sp, method="bray")
-myhclust = hclust( mydist )
-plot(myhclust, main="Bray-Curtis Dissimilarity", 
-     method="ward.D", xlab="Samples", sub = "")
-```
-
-# Ordination Analysis
-
-The `r BiocStyle::Biocpkg("phyloseq")` package provides a variety of ordination methods, with convenient options for labelling points. Here is a 
-Principal Coordinates Analysis plot of species-level taxa from the Loman dataset, using Bray-Curtis distance:
-
-```{r, warning=FALSE}
-ordinated_taxa = ordinate(loman.sp, method="PCoA", distance="bray")
-plot_ordination(loman.sp, ordinated_taxa, color="stool_texture", 
-                title = "Bray-Curtis Principal Coordinates Analysis")
-```
-
-
-```{r}
-plot_scree(ordinated_taxa, title="Screeplot")
-```
-
-# Differential Abundance Analysis with DESeq2 and edgeR
-
-## Brief introduction to differential abundance and the negative binomial log-linear generalized linear model 
-
-One of the most common goals in microbiome data analysis to determine which bugs are more or less abundant in a given experimental or exposure group, vs. a control or reference group. To do this, we use generalized linear models (GLMs), specifically with a log link and negative binomial error. 
-
-This GLM models the logarithm of the mean of counts, as a linear combination of the covariates (experimental conditions, exposures, confounding variables, etc.). 
-
-$log_2(E[Y|x]) = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + ... + \beta_m x_m$
-
-$Y \sim{} NB(\mu, \sigma^2), \sigma^2 = \mu + \theta\mu^2$
-
-In the context of differential abundance (DA), $Y$ corresponds to the (mean relative) abundance of given microbe, the $x$'s correspond to the exposures or experimental conditions. Our interest is in estimating the $\beta$ coefficients, which represent the difference in log2 relative abundance, or log fold changes (LFCs), for each feature (bug etc.).  `r BiocStyle::Biocpkg("DESeq2")` and `r BiocStyle::Biocpkg("edgeR")` are 2 software implementations of this approach.
-
-## Empirical Bayes for high dimensional GLMs
-
-The precision of estimates is highly dependent on the $\theta$ (dispersion) parameter. In the high dimensional setting, we have one model for each of the features (bugs etc.). We may have a small number of samples (usually many more features than samples), and some features may have very low counts. This means if we estimate each model independently, the models will be very imprecise (i.e. have large p-values). 
-
-However, we can address this by exploiting an assumption that the $\theta$ parameters will be similar (i.e. come from a common distribution) between all the features. To do this, we can use a method called empirical Bayes, which uses a prior on the dispersion parameters for each model based on the *common dispersion* across all models, shrinking their dispersion towards a common center. In other words, empirical Bayes allows the models for each feature to "borrow strength" from one another. Both `r BiocStyle::Biocpkg("DESeq2")` and `r BiocStyle::Biocpkg("edgeR")` use empirical Bayes to estimate the dispersions.
-
-Important similarities between `r BiocStyle::Biocpkg("DESeq2")` and `r BiocStyle::Biocpkg("edgeR")`:
-
-* Both estimate negative binomial, log-linear GLMs
-
-* Both use empirical Bayes to shrink dispersion estimates
-
-* Both receive unnormalized counts, and internally normalize for sequencing depth and composition
-
-* Both make the assumption that few features are differentially abundant (but do so in a slightly different way)
-
-* Both easily integrate corrections for multiple testing, particularly false discovery rate (FDR)
-
-Important differences between `DESeq2` and `edgeR` (defaults):
-
-`DESeq2`:
-
-* Automatically filters out lowly abundant features, optimized to maximize the number of DA features at user-specified $\alpha$.
-
-* Automatically removes outliers (See `?replaceOutliers` for details.)
-
-* Incorporates shrinkage of coefficients (although not a default)
-
-
-`edgeR`:
-
-* Does not automatically filter, so manual filtering is necessary
-
-* Does not automatically remove outliers
-
-* No simple coefficient shrinkage, but generally not necessary
-
-
-## DESeq2
-
-
-Both `DESeq2` and `edgeR` expect unnormalized counts as input: specifically, **do not** rarefy or calculate relative abundance by dividing by sequencing depth. They are normalized internally to account for differences in sequence depth. It's simplest to start with an `ExpressionSet` object, but a `phyloseq` object works as well. 
-
-
-```{r message=FALSE}
-suppressPackageStartupMessages(library(DESeq2))
-
-loman.counts <- curatedMetagenomicData("LomanNJ_2013.metaphlan_bugs_list.stool",
-                                                               counts = TRUE,
-                                                               dryrun = FALSE)[[1]]
-
-#keeping the rownames consistent so we can use the phyloseq taxonomy table later
-rownames(loman.counts) <- rownames( tax_table(loman.pseq) )
-```
-
-We must remove samples with missing values in design variables before converting to a `DESeqDataSet`.
-
-```{r}
-loman.counts_na.omit <- loman.counts[,!is.na(loman.counts$stool_texture)]
-```
-
-`DESeq2` uses a **DESeqDataSet** object as input. This object consists of: 
-
-* `countData`, a matrix of counts where rows are features and columns are samples 
-
-* `colData`, the sample-level metadata where columns are features and rows are samples, and
-
-* `design`, the formula for the right-hand side of the linear model we wish to fit. For simplicity we will use one variable, `stool_texture`, but you can seamlessly include additional variables (e.g. batch effects, confounders) using the `+` operator (see `?formula` for help)
-
-```{r message=FALSE, warning=FALSE}
-dds <- DESeqDataSetFromMatrix(countData = exprs(loman.counts_na.omit),
-                              colData   = pData(loman.counts_na.omit),
-                              design= ~ stool_texture)
-
-dds
-```
-
-Even though `DESeq2` does automatic filtering of lowly-expressed features, it is recommended to prefilter features that have no (or very few) counts, to decrease computational load. At the very least we would like features to have more than 1 count.
-
-```{r}
-dds <- dds[ rowSums(counts(dds)) > 1, ]
-dim(dds)
-```
-
-Now we're ready to fit the linear model.
-
-The `DESeq()` function estimates dispersions,  fits models, and calculates Wald statistics. One important argument is `betaPrior`, which determines whether to estimate shrunken coefficients -- we set it to `TRUE`. 
-
-```{r message=FALSE}
-dds <- DESeq(dds, betaPrior = TRUE)
-dds
-```
-
-The `results()` function performs automatic filtering and p-value adjustment, and generates the results table. Note some important arguments:
-
-* `contrast` specifies what comparison we would like to see log fold changes (LFCs), p-values, etc. for. There are a number of ways to specify this; we will use the simplest, which is a character vector with (1) the name of a factor in the design formula, (2) the name of the numerator level,  and (3) the name of the denominator level (in that order). 
-
-* `alpha` is not only our statistical significance cutoff, but also determines how filtering is performed: the filtering threshold is automatically chosen to maximize the number of signficant features for a given alpha. (see `independentFiltering` argument of `?results`) The default is 0.1; we set it to 0.05.
-
-* `addMLE = TRUE`: this tells `results()` to provide the unshrunken coefficients in addition to the shrunken ones, which we will use for demonstration purposes.
-
-Let's say we want to compare watery to smooth:
-
-```{r}
-res <- results(dds, 
-               contrast = c("stool_texture", "watery","smooth"),
-               alpha=0.05, 
-               addMLE = TRUE)
-str(res)
-```
-
-The results table is contained in the `listData` element of the `DESeqResults` object returned by `results`. 
-```{r}
-str(res@listData)
-```
-with columns accessible by the `$` operator:
-
-```{r}
-head(res$log2FoldChange)
-```
-
-We can get some basic tallies using the `summary()` function:
-
-```{r}
-summary(res)
-```
-
-`LFC > 0 (up)` and `LFC < 0` down tell us the number of features found differentially abundant in each direction. `outliers` tells us that `DESeq2` did not identify any outliers to filter out. `low counts` tells us that `DESeq2` automatically filtered out 245 features with low counts. 
-
-A histogram of raw p-values can be a good sanity check. A spike at the left hand side indicates a signal.
-
-```{r}
-hist(res$pvalue, breaks=100)
-```
-
-`plotMA()` gives the MA plot, a plot of the LFCs by overall abundance of each feature. 
-
-* The argument `alpha=0.05` tells `plotMA()` that we want LFCs with FDR < 0.05 colored red. 
-
-* The argument `MLE` dictates whether to show the shrunken or unshrunken LFCs. We will look at both. Notice that the most shrinkage occurs in features with low counts. This is what we want -- it avoids overestimating coefficients for which there is insufficient information.
-
-```{r}
-par(mfrow=c(1,2))
-DESeq2::plotMA(res, alpha=0.05, MLE=FALSE, main="Shrunken LFCs")
-DESeq2::plotMA(res, alpha=0.05, MLE=TRUE, main="Unshrunken LFCs")
-```
-
-One nice way to visualize the LFCs with FDR less than alpha is to use a dot plot. We can use the taxonomy table (`tax_table()`) from the `phyloseq` object to group by higher taxonomic levels.
-
-```{r}
-#assemble the plotting data in a data frame
-plot_dat <- data.frame(tax = res@rownames, LFC = res$log2FoldChange, FDR = res$padj)
-#add taxonomy
-plot_dat <- cbind(plot_dat, tax_table(loman.pseq)[plot_dat$tax,])
-#keep FDR < 0.05
-plot_dat <- subset(plot_dat, FDR < 0.05)
-
-library(ggplot2)
-ggplot(plot_dat, aes(x=LFC, y=reorder(Genus,as.numeric(Phylum)), color=Phylum)) +
-  geom_point() +
-  theme_bw() +
-  labs(y="Genus", x="log2 fold change")
-
-```
-
-
-## edgeR
-
-The `r BiocStyle::Biocpkg("edgeR")` workflow is similar to `DESeq2`, with a few key differences.
-```{r}
-suppressPackageStartupMessages(library(edgeR))
-```
-
-Like `DESeq2`, `edgeR` requires that we manually delete samples with missing values in design variables.
-
-```{r}
-loman.counts_na.omit <- loman.counts[,!is.na(loman.counts$stool_texture)]
-dim(loman.counts_na.omit)
-```
-`edgeR` needs the count matrix to be a `DGEList` object.
-```{r}
-counts <- exprs(loman.counts_na.omit )
-dge <- DGEList(counts=counts, group = loman.counts_na.omit$stool_texture)
-show(dge)
-```
-
-Unlike `DESeq2`, `edgeR` does not do any automatic filtering of features. A recommendation is to delete features that have less than 1 read per million in *n* samples, where *n* is the size of the smallest comparison group.
-
-```{r}
-n <- min(table(loman.counts_na.omit$stool_texture))
-n
-```
-```{r}
-keep <- rowSums( cpm( counts ) > 1 ) >= n 
-dge <- dge[keep, , keep.lib.sizes=FALSE ]
-dim(dge)
-```
-
-This deleted 731 - 282 = 449 features, quite a few more than `DESeq2`'s default. 
-
-With `edgeR`, we also need to manually calculate the normalization factors using `calcNormFactors` (`DESeq` does this automatically.)
-```{r}
-dge <- calcNormFactors(dge)
-```
-
-Unlike in `DESeq2`, where we specify the comparison we want to make with the `contrast` argument, in `edgeR` we specify the comparison by generating a design matrix using `model.matrix()`. The design matrix formula corresponds to the right-hand side of our linear model formula, just as we used when we defined the `DESeqDataSetFromMatrix` in `DESeq2`.   
-
-```{r}
-
-#set reference level
-loman.counts$stool_texture <- relevel(factor(loman.counts$stool_texture), "smooth")
-
-#create the design matrix
-dsg.mtrx <- model.matrix(~stool_texture, data=loman.counts)
-head(dsg.mtrx)
-
-```
-
-Next we calculate the dispersions. Whereas `DESeq2` does this automatically in the `DESeq` call, we must do it manually in `edgeR` using the `estimateDisp()` function.
-
-```{r}
-#add dispersion estimates to the DGEList object
-
-dge <- estimateDisp(dge, design = dsg.mtrx)
-show(dge)
-```
-
-`glmFit()` estimates the linear models, and `glmLRT` performs hypothesis tests. The argument `coef=3` tells `glmLRT()` that we want to estimate p-values for **stool_texture=watery**, the 3rd coefficient in the model (including the intercept).
-
-```{r}
-#fit the model
-fit <- glmFit(dge, dsg.mtrx) 
-lrt_watery <- glmLRT(fit, coef=3)
-```
-
-If you're not sure which coefficient is which, you can check:
-```{r}
-colnames(fit$coefficients)
-```
-`topTags()` calculates adjusted p-values and returns a table of the top *n* most significant features, sorted by FDR. Let's say I want the top 25 results:
-```{r}
-results_watery <- topTags(lrt_watery, n=25)
-results_watery
-```
-
-`edgeR` also provides an MA-plot via `plotSmear`, but we must manually provide the differentially abundant features.
-
-```{r}
-de.tags <- rownames(results_watery)[results_watery$table$FDR < 0.05]
-plotSmear(lrt_watery, de.tags = de.tags, cex = .4)
-```
-
-
-Again, it's good to look at a histogram of p-values. If there's a signal, there should be a spike on the left-hand side. 
-
-```{r}
-hist(lrt_watery$table$PValue, breaks=100)
-```
-
-If you're happy with your model, plot the LFCs as in `DESeq2`.
-
-```{r}
-tax_names <- rownames(results_watery$table)
-plot_dat <- data.frame(results_watery$table, tax = tax_names, coef="Watery", stringsAsFactors = FALSE)
-
-#attach the taxonomy table, for grouping by taxonomy
-plot_dat <- cbind(plot_dat, tax_table(loman.pseq)[tax_names,])
-
-#filter by alpha
-plot_dat <- plot_dat[plot_dat$FDR < 0.05, ]
-
-#plot
-ggplot(plot_dat, aes(x=logFC, y=reorder(Genus, as.numeric(Phylum)), color=Phylum)) +
-  geom_point(size=2) +
-  labs(y=NULL, x="log2 fold change") +
-  theme_bw()
-```
