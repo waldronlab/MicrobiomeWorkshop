@@ -12,18 +12,19 @@ vignette: >
   %\VignetteEncoding[utf8]{inputenc}
 ---
 
+#Syllabus
 
 ## Working with open-source Human Microbiome Project Data phases 1 (HMP) and 2 (iHMP): Efficient Data Access and Analysis Workflow
 
 ## Instructors names and contact information
 
-1. Levi Waldron (@LeviWaldron1), Graduate School of Public Health and Health Policy, City University of New York, New York, NY. 
+1. Levi Waldron, Graduate School of Public Health and Health Policy, City University of New York, New York, NY. 
 email: Levi.Waldron@sph.cuny.edu
 
 2. Ni Zhao, Department of Biostatistics, Johns Hopkins University, Baltimore, MD. 
 email: nzhao10@jhu.edu
 
-3. Ekaterina Smirnova (@katiasmirn), Department of Biostatistics, Virginia Commonwealth University, Richmond, VA. email: ekaterina.smirnova@vcuhealth.org
+3. Ekaterina Smirnova, Department of Biostatistics, Virginia Commonwealth University, Richmond, VA. email: ekaterina.smirnova@vcuhealth.org
 
 ## Workshop Description
 
@@ -102,6 +103,42 @@ install("waldronlab/MicrobiomeWorkshop", build_vignettes=TRUE,
         dependencies=TRUE)
 ```
 
+Additional dependencies
+
+```{r, echo = TRUE, message=FALSE}
+#token 35f0903098e0c9ef30faf7514e382e6bbd5c7179
+#BiocManager::install("HMP2Data")
+
+#devtools::install_github("jstansfield0/HMP2Data", auth_token = "35f0903098e0c9ef30faf7514e382e6bbd5c7179")
+
+library(HMP2Data)
+library(phyloseq)
+library(SummarizedExperiment)
+library(MultiAssayExperiment)
+library(dplyr)
+library(magrittr)
+library(Hmisc)
+library(colorspace)
+library(ade4)
+library(vegan)
+library(gridExtra)
+library(reshape2)
+library(here)
+library(Matrix)
+library(knitr)
+library(kableExtra)
+library(plyr)
+library(tableone)
+library(adespatial)
+library(kableExtra)
+library(ecodist)
+library(MiRKAT)
+
+source("CIAPlots.R")
+
+```
+
+
 Then you should be able to view the compiled vignette:
 ```{r, eval=FALSE}
 vignette("MicrobiomeWorkshop")
@@ -113,7 +150,21 @@ Load all needed packages. These are listed in the [DESCRIPTION](https://github.c
 library(MicrobiomeWorkshop)
 ```
 
-## Introduction
+Bibliography
+
+```{r, echo = T, include =F}
+
+# install.packages("devtools")
+# devtools::install_github("ropensci/RefManageR")
+
+library(RefManageR)
+#need this file
+#bib <- ReadBib("~/Dropbox/MOMSPI/HMP2/BioC2019/library.bib", check = FALSE)
+BibOptions(check.entries = FALSE, style = "markdown", bib.style = "alphabetic", cite.style = 'alphabetic')
+
+```
+
+# Introduction
 
 Bioconductor provides curated resources of microbiome data.  Most microbiome data are generated either by targeted amplicon sequencing (usually of variable regions of the 16S ribosomal RNA gene) or by metagenomic shotgun sequencing (MGX). These two approaches are analyzed by different sequence analysis tools, but downstream statistical and ecological analysis can involve any of the following types of data:
 
@@ -124,7 +175,7 @@ Bioconductor provides curated resources of microbiome data.  Most microbiome dat
 
 A review of types and properties of microbiome data is provided by [@Morgan2012-mq].
 
-### curatedMetagenomicData: Curated and processed metagenomic data through ExperimentHub
+## curatedMetagenomicData: Curated and processed metagenomic data through ExperimentHub
 
 ```{r, results="hide", echo=FALSE, cache=FALSE}
 suppressPackageStartupMessages(library(curatedMetagenomicData))
@@ -182,7 +233,7 @@ ExpressionSet2phyloseq( esl[[1]], phylogenetictree = TRUE)
 
 See the documentation of `phyloseq` for more on ecological and differential abundance analysis of the microbiome.
 
-### HMP16SData: 16S rRNA Sequencing Data from the Human Microbiome Project
+# HMP16SData: 16S rRNA Sequencing Data from the Human Microbiome Project
 
 ```{r, results='hide'}
 suppressPackageStartupMessages(library(HMP16SData))
@@ -195,8 +246,864 @@ V13()
 
 This can also be converted to `phyloseq` for ecological and differential abundance analysis; see the `HMP16SData` vignette for details.
 
-
+<!---
 ## How to add figures
 
 `r knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', 'fig.png'))`
+--->
+
+# HMP2Data
+
+## Integrative Human Microbiome Project (iHMP)  https://hmpdacc.org/ihmp/
+
+
+```{r, out.width = '100%', out.height= '70%', results='hold', echo = FALSE}
+knitr::include_graphics(file.path(getwd(), "iHMP.jpeg"))
+```
+
+- One of the largest open data resources for studying longitudinal microbiome changes  and connection to disease
+
+- Novel data -- first scientific results just published  in the special collection of **Nature** and its sister journals (https://www.nature.com/articles/s41586-019-1238-8) 
+
+```{r, out.width = '80%', out.height= '50%', results='hold', echo = FALSE}
+knitr::include_graphics(file.path(getwd(), "Nature.jpeg"))
+```
+
+- Human Microbiome Project Data Portal (https://portal.hmpdacc.org/)
+- Open data -- but not straightforward to download and work with
+
+```{r, out.width = '100%', out.height= '70%', results='hold', echo = FALSE}
+knitr::include_graphics(file.path(getwd(), "DAC.jpeg"))
+```
+
+- Need **Aspera client** to even download the data  -- not every lab/researcher has these expertise available 
+- Still need multiple processing steps after data is downloaded to: 
+
+1. map taxonomy ids from the database
+
+2. merge with meta data -- not available on the DAC portal
+
+3. construct phylogenetic tree
+
+4. merge omics data.
+
+
+## HMP2Data package 
+
+`HMP2Data` package is currently under review. Once accepted to Bioconductor, it can be installed using `BiocManager` as follows. 
+
+*Note: not available yet*
+
+```{r, eval = FALSE}
+BiocManager::install("HMP2Data")
+```
+
+The following packages will be used in this vignette to provide demonstrative
+examples of what a user might do with `r BiocStyle::Biocpkg("HMP2Data")`.
+
+```{r, message=FALSE, warning=FALSE}
+library(phyloseq)
+library(SummarizedExperiment)
+library(MultiAssayExperiment)
+library(dplyr)
+library(ggplot2)
+library(UpSetR)
+```
+
+
+Current (development) version can be installed can be installed from John Stansfield's GitHub repository https://github.com/jstansfield0/HMP2Data as follows. This is the version used for the workshop.
+
+```{r}
+if(!require("HMP2Data")){
+    BiocStyle::CRANpkg("devtools")
+    devtools::install_github("jstansfield0/HMP2Data")
+}
+```
+
+The stable version is available at the dozmorovlab GitHub repository https://github.com/dozmorovlab/HMP2Data 
+
+```{r, eval = FALSE}
+devtools::install_github("dozmorovlab/HMP2Data")
+```
+
+Load `HMP2Data` package
+
+```{r}
+library(HMP2Data)
+```
+
+
+Once installed, `HMP2Data` provides functions to access the data from the three major HMP2 studies. 
+
+
+### Multi-omics microbiome study pregnancy initiavite (MOMS-PI) 
+
+
+- Vaginal microbiome consortium study at Virginia Commonwealth University (VCU) http://vmc.vcu.edu/momspi 
+
+```{r, out.width = '70%', out.height= '30%', results='hold', echo = FALSE}
+knitr::include_graphics(file.path(getwd(), "momspi.jpeg"))
+```
+
+- Pre-term birth study results: https://www.nature.com/articles/s41591-019-0450-2
+- Trem-birth study: https://www.nature.com/articles/s41591-019-0465-8
+- Only a subset of samples available on the DAC portal was used in current publications
+- Novel longitudinal and multi-omics models have not yet been throughly explored
+- Data structure gives many opportunities for statistical models development and data exploration 
+
+
+#### 16S data 
+
+Load 16S data as a matrix, rows are Greengene IDs, columns are sample names:
+
+```{r, echo = TRUE}
+data("momspi16S_mtx")
+
+```
+
+Load the Greengenes taxonomy table as a matrix, rows are Greengene IDs, columns are taxonomic ranks:
+
+```{r, echo = TRUE}
+data("momspi16S_tax")
+# Check if Greengene IDs match between the 16S and taxonomy data
+# all.equal(rownames(momspi16S_mtx), rownames(momspi16S_tax)) # Should be TRUE
+```
+
+Load the 16S sample annotation data as a matrix, rows are samples, columns are annotations:
+
+```{r, echo = TRUE}
+data("momspi16S_samp")
+
+# Check if sample names match between the 16S and sample data
+# all.equal(colnames(momspi16S_mtx), rownames(momspi16S_samp)) # Should be TRUE
+```
+
+The `momspi16S` function assembles those matrices into a `phyloseq` object.
+
+```{r, message=FALSE}
+momspi16S_phyloseq <- momspi16S()
+momspi16S_phyloseq
+```
+
+#### Cytokine data
+
+The MOMS-PI cytokine data can be loaded as a matrix, rownames are cytokine names, colnames are sample names:
+
+```{r}
+data("momspiCyto_mtx")
+momspiCyto_mtx[1:5, 1:3]
+```
+
+The cytokine data has `r nrow(momspiCyto_mtx)` rows and `r ncol(momspiCyto_mtx)` columns.
+
+Load the cytokine sample annotation data as a matrix, rows are samples, columns are annotations:
+
+```{r}
+data("momspiCyto_samp")
+colnames(momspiCyto_samp)
+```
+
+The function `momspiCytokines` will make a `SummarizedExperiment` containing cytokine data
+
+```{r}
+momspiCyto <- momspiCytokines()
+momspiCyto
+```
+
+
+### IBD
+
+Load 16S data as a matrix, rows are SILVA IDs, columns are sample names:
+
+```{r}
+data("IBD16S_mtx")
+```
+
+Load the SILVA taxonomy table as a matrix, rows are SILVA IDs, columns are taxonomic ranks:
+
+```{r}
+data("IBD16S_tax")
+colnames(IBD16S_tax)
+```
+
+Load the 16S sample annotation data as a matrix, rows are samples, columns are annotations:
+
+```{r}
+data("IBD16S_samp")
+colnames(IBD16S_samp) %>% head()
+```
+
+The IBD `phyloseq` object can be loaded as follows.
+
+```{r}
+IBD <- IBD16S()
+IBD
+```
+
+```{r, echo = FALSE}
+#short term fix: will be updated in the new package version
+sample_data(IBD)$sample_body_site <- "feces"
+sample_data(IBD)$subject_race <- ifelse(sample_data(IBD)$race == "White", "caucasian",
+                                        ifelse(sample_data(IBD)$race == "American Indian or Alaska Native", "american_indian_or_alaska_native", 
+                                               ifelse(sample_data(IBD)$race == "Black or African American", "african_american", "ethnic_other")))
+```
+
+
+### T2D
+
+Load 16S data as a matrix, rows are Greengene IDs, columns are sample names:
+
+```{r}
+data("T2D16S_mtx")
+
+```
+
+Load the Greengenes taxonomy table as a matrix, rows are Greengene IDs, columns are taxonomic ranks:
+
+```{r}
+data("T2D16S_tax")
+colnames(T2D16S_tax)
+
+```
+
+Load the 16S sample annotation data as a matrix, rows are samples, columns are annotations:
+
+```{r}
+data("T2D16S_samp")
+colnames(T2D16S_samp)
+
+```
+
+The T2D `phyloseq` object can be loaded like so.
+
+```{r}
+T2D <- T2D16S()
+T2D
+```
+
+## Features
+
+### Frequency Table Generation
+
+The sample-level annotation data contianed in `HMP2Data` can be summarized using the `table_two` function. First, we need to make a list of the `phyloseq` and `SummarizedExperiment` objects which can then be entered into the `table_two()` table generating function.
+
+
+```{r}
+list("MOMS-PI 16S" = momspi16S_phyloseq, "MOMS-PI Cytokines" = momspiCyto, "IBD 16S" = IBD, "T2D 16S" = T2D) %>% table_two()
+```
+
+
+### Visits Histograms
+
+We can plot the histogram of the number of samples at each visit for all studies. 
+Note that the X-axis is capped at count of 40 for better visualization.
+
+```{r, fig.height=4, fig.width=7}
+# make data.frame for plotting
+plot_visits <- data.frame(study = c(rep("MOMS-PI Cytokines", nrow(momspiCyto_samp)),
+                     rep("IBD 16S", nrow(IBD16S_samp)),
+                     rep("T2D 16S", nrow(T2D16S_samp))),
+          visits = c(momspiCyto_samp$visit_number,
+                     IBD16S_samp$visit_number,
+                     T2D16S_samp$visit_number))
+p2 <- ggplot(plot_visits, aes(x = visits, fill = study)) + 
+  geom_histogram(position = "dodge", alpha = 0.7, bins = 30, color = "#00BFC4") + xlim(c(0, 40)) +
+  theme(legend.position = c(0.8, 0.8))  + 
+  xlab("Visit number") + ylab("Count")
+p2
+```
+
+Note that there are `r sum(plot_visits$visits > 40)` samples at visit numbers over 40.
+
+## UpsetR plots
+
+### MOMS-PI 16S rRNA data
+
+Here we plot the body sites which samples were taken from for each patient in the MOMS-PI 16S data.
+
+```{r, fig.height=6, fig.width=10}
+# set up data.frame for UpSetR
+momspi_upset <- aggregate(momspi16S_samp$sample_body_site, by = list(momspi16S_samp$subject_id), table)
+tmp <- as.matrix(momspi_upset[, -1])
+tmp <- (tmp > 0) *1
+momspi_upset <- data.frame(patient = momspi_upset$Group.1, tmp)
+
+# plot
+upset(momspi_upset, order.by = 'freq', matrix.color = "blue", text.scale = 2)
+```
+
+### MOMS-PI Cytokines data
+
+Here we plot the body sites which samples were taken from for each patient in the MOMS-PI cytokines data.
+
+```{r}
+# set up data.frame for UpSetR
+momspiCyto_upset <- aggregate(momspiCyto_samp$sample_body_site, by = list(momspiCyto_samp$subject_id), table)
+tmp <- as.matrix(momspiCyto_upset[, -1])
+tmp <- (tmp > 0) *1
+momspiCyto_upset <- data.frame(patient = momspiCyto_upset$Group.1, tmp)
+
+# plot
+upset(momspiCyto_upset, order.by = 'freq', matrix.color = "blue", text.scale = 2)
+```
+
+### IBD data
+
+The IBD patients only had samples taken from the feces.
+
+<!-- ```{r} -->
+<!-- # set up data.frame for UpSetR -->
+<!-- IBD_upset <- aggregate(IBD16S_samp$sample_body_site, by = list(IBD16S_samp$subject_id), table) -->
+<!-- tmp <- as.matrix(IBD_upset[, -1]) -->
+<!-- tmp <- (tmp > 0) *1 -->
+<!-- IBD_upset <- data.frame(patient = IBD_upset$Group.1, tmp) -->
+
+<!-- # plot -->
+<!-- upset(IBD_upset, order.by = 'freq') -->
+<!-- ``` -->
+
+
+### T2D data
+
+Here we plot the body sites which samples were taken from for each patient in the T2D 16S rRNA data.
+
+```{r}
+# set up data.frame for UpSetR
+T2D_upset <- aggregate(T2D16S_samp$sample_body_site, by = list(T2D16S_samp$subject_id), table)
+tmp <- as.matrix(T2D_upset[, -1])
+tmp <- (tmp > 0) *1
+T2D_upset <- data.frame(patient = T2D_upset$Group.1, tmp)
+
+# plot
+upset(T2D_upset, order.by = 'freq', matrix.color = "blue", text.scale = 2)
+```
+
+
+# Microbiome Analyses: IBD example
+
+
+```{r}
+
+Table1Var <- c("subject_gender", "Age.at.diagnosis", "race", "visit_number",
+               "site_name", "Education.Level", "Antibiotics", "BMI")
+
+demo_data = sample_data(IBD)[ ,c("sample_id", "subject_id", Table1Var, "diagnosis")] %>%
+            data.frame()
+
+#all <- CreateTableOne(vars = Table1Var, data = demo_data)
+#kableone(all)
+
+stratified = tableone::CreateTableOne(
+  vars = Table1Var,
+  data = summarytools::unlabel(demo_data), strata = "diagnosis", includeNA = TRUE)
+stratified <- print(stratified, printToggle = FALSE, showAllLevels = FALSE)
+stratified[,!(colnames(stratified) %in% "test")]%>%
+  knitr::kable(format = "html", caption = "Characteristics of the Study Cohort",
+               col.names = c("CD", "nonIBD", 
+                             "UC", "p-value"))%>% 
+  kable_styling("striped", full_width = T)
+
+```
+
+
+##Alpha diversity analysis 
+### Alpha Diversity Definitions 
+Alpha diversity is a within-sample diversity measurement that models the richness and/or eveness of the microbial community. 
+<!--
+![Intuitive explanation of alpha, beta and Gamma diversity.](diversity.png)
+(picture by https://socratic.org/users/kate)
+--->
+Different alpha diversities emphasize different aspect of the community. Commonly used alpha diversities include: 
+
+
+| Diversity        |Description           | Formula  | 
+| ------------- |:-------------:| -----:|
+|Observed Species    |No. of unique taxa in a sample| Number of species | 
+|Chao 1      |Adding a correction to observed species    | $S_{ob} + \frac{n_1^2}{2n_2}$ |
+|Shannon |Both richness and evenness     |$-\sum_{i=1}^{s} p_i \log(p_i)$ |
+|Simpson reciprocal|Both richness and evenness|$\frac{N(N - 1)}{n(n-1)}$|
+|Pielou's evenness|evenness |$\frac{H}{H_{max}}$|
+
+Of course, the alpha diversity measurement is impacted by the sequencing depth (total number of reads per sample). Rarefying (through vegan:rarefy) is necessary before calculating alpha diversity.
+
+### Comparing Alpha Diversities between Groups
+
+We can use "plot_richness" from phyloseq package to plot the alpha diversities. 
+
+```{r}
+IBD %<>%
+  taxa_sums() %>%
+  is_greater_than(0) %>%
+  prune_taxa(IBD)
+sample_data(IBD)$diagnosis = factor(sample_data(IBD)$diagnosis)
+
+p = plot_richness(IBD, x="diagnosis", color="diagnosis", measures=c("Observed", "InvSimpson", "Shannon", "Chao1")) + geom_jitter()
+p + geom_boxplot(data = p$data, aes(x = diagnosis, y = value, color = NULL), alpha = 0.1)
+```
+
+Once we summarize the whole community through a one-dimensional summary statistics (alpha diversity), all the traditional methods for hypothesis testing are applicable. 
+
+```{r}
+alpha = estimate_richness(IBD, measures=c("Observed", "InvSimpson", "Shannon"))
+alpha_df = data.frame(sample_data(IBD)[,c("sample_id","subject_id")], alpha)
+rownames(alpha_df) = NULL
+kable(head(alpha_df),
+      digits = 3,caption = "Some Alpha Diversities of the IBD dataset") %>% kable_styling(bootstrap_options = c("striped", "hover"), full_width = F,position = "center") 
+```
+
+
+## Beta diversity analysis 
+
+### Beta Diversity Definitions 
+
+Beta diversity describes how samples vary against each other. Beta diversity is typically the thinking behind “clustering” algorithms that show differences or similarities among samples. For example, we may be intrested in the differences in gut microbiome between non IBD and IBD patients. 
+
+List of the commonly used beta-diversities:
+
+| Diversity        |Description           |Formula| 
+| ------------- |:-------------:|:-----:|
+|UniFrac   |Qualitative, Phylogenetics-based |$\sum_{i=1}^n\frac{b_i|I(p_i^A > 0)-I(p_i^B > 0)|}{\sum_{i=1}^n b_i}$ | 
+|Weighted UniFrac     |Quantitative,Phylogenetics-based|$\frac{\sum_{i=1}^n b_i|p_i^A - p_i^B|}{\sum_{i=1}^nb_i(p_i^A + p_i^B)}$   |
+|Generalized UniFrac |Compromise between the previous two |$\frac{\sum_{i=1}^n b_i (p_i^A + p_i^B)^{\alpha} |\frac{p_i^A - p_i^B}{p_i^A + p_i^B}|} {\sum_{i=1}^nb_i(p_i^A + p_i^B)^{\alpha}}$ |
+|Bray-Curtis|Quantitative|$1 - \frac{2C_{i,j}}{S_i + S_j}$|
+|Jaccard | Qualitative| $\frac{|A \cap B|}{|A \cup B|}$|
+
+### Comparing Beta Diversities between Groups
+
+```{r, warning =F}
+
+par(mfrow = c(1,2))
+jac <- as.matrix(distance(t(otu_table(IBD)), method = "jaccard"))
+mod1 <- betadisper(as.dist(jac), as.factor(IBD16S_samp$diagnosis))
+plot(mod1, ellipse = TRUE, hull = FALSE, main="Jaccard Distance", xlab="PC 1", ylab="PC 2", sub=NULL)
+box()
+
+bc = as.matrix(bcdist(t(otu_table(IBD))))
+mod2 <- betadisper(as.dist(bc), as.factor(IBD16S_samp$diagnosis))
+plot(mod2, ellipse = TRUE, hull = FALSE, main="Bray-Curtis Dissimilarity", xlab="PC 1", ylab="PC 2", sub=NULL, xlim = c(-0.2, 0.2))
+legend("bottomright", legend=c("CD", "nonIBD", "UC"), pch = 1:3, col=c("Black", "red", "Green"), cex=1.3, box.lty=0)
+box()
+```
+
+
+####Permutational Multivariate Analysis of Variance
+
+Permutational multivariate analysis of variance (PERMANOVA) [@McArdle2001Fit], a non-parametric multivariate statistical test, is one commonly used for assessing the association between microbiome community and a phenotype (e.g., IBD or not). 
+
+However, the PERMANOVA approach, by itself, doesn't allow for repeated measures. Ignoring the repeated measures (treating them as if they are all independent samples) can lead to inflated type I error (i.e., more false positive discoveries than we would like to accept through our p-value cutoff). However, we can use the method if we consider a subset of the samples which are independent with each other, such as those from the baseline. 
+
+PERMANOVA requires the selection of a single distance metric. Howeve, if the selected distance metric doesn't capture the underlying association pattern, PERMANOVA tends to lose power. 
+
+```{r}
+IBD0 = subset_samples(IBD,  week_num == 0&diagnosis %in% c("nonIBD", "CD"))
+IBD0 %<>%
+  taxa_sums() %>%
+  is_greater_than(0) %>%
+  prune_taxa(IBD0)
+
+jac0 <- as.matrix(distance(t(otu_table(IBD0)), method = "jaccard"))
+bc0 =  as.matrix(bcdist(t(otu_table(IBD0))))
+CD = as.numeric(sample_data(IBD0)$diagnosis == "CD")
+gender = as.numeric(factor(sample_data(IBD0)$subject_gender))
+
+fit = adonis(bc0 ~ gender + CD, permutations=500)
+kable(fit$aov.tab,
+      digits = 3,caption = "PERMANOVA result using Bray-Curtis distance") %>% kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)  
+```
+
+#### Microbiome Regression Kernel Association Test (MiRKAT)
+
+MiRKAT: a regression approach for flexibly associating the microbial community with phenotype of interest [@Zhao2015MiRKAT]. The method also has extensions that can handle longitudinal measures [@GLMMMiRKAT], multivariate [@Zhan_MMiRKAT] and survial outcomes [@Plantinga2017].  
+
+$g(y_i) = X_i\beta + f(\boldsymbol M_i) + \epsilon_i,$
+$f \sim$ a reproducing kernel Hilbert space generated by function $K$. 
+Equivalently, 
+$\boldsymbol f \sim N(0, \tau\boldsymbol K)$, in which $\boldsymbol K$ is a similarity matrix that can be calculated through a distance metric. 
+
+Multiple kernels (distances) are allowed simulatenously in this framework, making this procedure robust to the underlying association patterns. 
+
+```{r}
+ K_bc = D2K(bc0); K_jac = D2K(jac0)
+ y = ifelse(sample_data(IBD0)$diagnosis == "CD",1, 0 )
+ out = MiRKAT(y=y, X = gender, Ks = list(K_bc, K_jac), out_type = "D") 
+```
+
+
+# Multi-omics data integration: MOMS-PI example
+
+Combine 16S and cytokines data
+
+```{r, echo = TRUE}
+#order both sets by visit number within a subject
+momspi16S_samp <- momspi16S_samp[
+  with(momspi16S_samp, order(subject_id, sample_body_site, visit_number)),
+] 
+
+momspiCyto_samp <- momspiCyto_samp[
+  with(momspiCyto_samp, order(subject_id, sample_body_site, visit_number)),
+] 
+
+```
+
+```{r}
+#select data collected at the same visit
+combined_samp <- merge(momspi16S_samp, momspiCyto_samp, 
+                       by = c("subject_id", "sample_body_site", 
+                        "project_name", "study_full_name",
+                        "subject_gender", "subject_race",
+                        "visit_number"))
+
+```
+
+In this tutorial, we concentrate on cross-sectional analysis of the first visit data, which corresponds to earlier time during pregnancy.   
+
+```{r, echo = TRUE}
+#select data from first visit only
+combined_samp <- combined_samp[combined_samp$visit_number ==  1,]
+
+table(combined_samp$sample_body_site)#all vaginal samples
+```
+
+
+We match the samples (contained in columns of both tables)  by the file names contained in colnames of each table.
+
+```{r, echo = FALSE}
+
+#select 16S data for those samples
+combined_16S_phyloseq <- subset_samples(momspi16S_phyloseq, file_name %in% combined_samp$file_name.x)
+
+#get rif of otus that are not observed in any sample for this subset
+combined_16S_phyloseq %<>%
+    taxa_sums() %>%
+    is_greater_than(0) %>%
+    prune_taxa(combined_16S_phyloseq)
+
+combined_16S_mtx <- otu_table(combined_16S_phyloseq)
+
+#can get same data directly from matrices, but less convenient because phyloseq has taxonomy info
+#combined_16S_mtx <- momspi16S_mtx[, colnames(momspi16S_mtx) %in% combined_samp$file_name.x]
+#get rif of otus that are not observed in any sample for this subset
+#combined_16S_mtx <- combined_16S_mtx[apply(combined_16S_mtx, 1, nnzero) >0, ]
+
+combined_Cyto_mtx <- momspiCyto_mtx[, colnames(momspiCyto_mtx) %in% combined_samp$file_name.y ]
+dim(combined_Cyto_mtx)
+```
+
+
+In 'combined_samp' object the names of matched files names for 16S data are recorded in column 'file.x' and for cytokines data in column 'file.y'. 
+
+
+
+```{r, echo = FALSE}
+#make sure all samples across 3 tables are in the same order
+combined_samp <- combined_samp[order(combined_samp$subject_id),]
+#reorder cytokines samples
+combined_Cyto_mtx <- combined_Cyto_mtx[,combined_samp$file_name.y]
+#reorder taxa samples
+combined_16S_mtx <- combined_16S_mtx[,combined_samp$file_name.x]
+```
+
+Make sure that samples are in rows and variables (taxa and cytokines) are in columns. 
+
+
+```{r}
+combined_16S_mtx <- t(combined_16S_mtx)
+combined_Cyto_mtx <- t(combined_Cyto_mtx)
+```
+
+Taxa are converted to proportions.
+
+```{r}
+combined_16S_mtx <- combined_16S_mtx/apply(combined_16S_mtx, 1, sum)
+```
+
+
+```{r, echo = FALSE}
+#cut the last 5 characters that correspond to the -omics type identifier
+rownames(combined_Cyto_mtx) <- substr(
+  rownames(combined_Cyto_mtx), 1,nchar(rownames(combined_Cyto_mtx))-5)
+
+rownames(combined_16S_mtx) <- substr(
+  rownames(combined_16S_mtx), 1,nchar(rownames(combined_16S_mtx))-5)
+
+#make sure all rownames match
+all(rownames(combined_16S_mtx) == rownames(combined_16S_mtx))
+```
+
+
+## Co-inertia analysis
+
+Basics:
+
+1. Let $X$ and $Y$ be 16S and cytokines tables respectively
+2. Rows: same $n$ women at first visit
+3. Columns: $p_1$ taxa and $p_2$ cytokines
+4. Column weights: $Q_X$ and $Q_Y$
+5. Row weights: $D$
+6. PCA analysis of each table: $(X, Q_X, D)$ and $(Y, Q_Y, D)$
+7. Co-inertia axes: $Y^TDX = K\Lambda^{1/2}A^T$ from eigendecomposition of $(Y^TDX, Q_X, Q_Y)$
+8. Plot $F_X = XA$ and $F_Y = YK$
+
+Taxa normalization:
+
+1. Center  16S data to work with PCA on the covariance matrix $\Sigma_X = Cov(X)$ 
+2. To normalize the magnitude,  divide each value of $X$ by the total variance: $\sqrt{\mbox{tr}(\Sigma_X)}$
+3. Note: step 2 is quivalent to dividing the matrix by $\sqrt{\sum_{k=1}^r \lambda_k}$, where $\lambda_k$ are the eigevalues of $\Sigma_X$ and $r$ is the rank of $X$.  
+
+```{r, echo = TRUE}
+taxa_mtx <- scale(combined_16S_mtx, center = TRUE, scale = FALSE)
+#use fast trace computation formula: tr(A^B) = sum(A*B), where '*' operator refers to elemetwise product
+taxa_tr <- sum(taxa_mtx*taxa_mtx)/(dim(taxa_mtx)[1]-1)
+taxa_mtx <- taxa_mtx/sqrt(taxa_tr)
+taxa.pca <- dudi.pca(taxa_mtx, scannf=FALSE, nf =61,
+                     center = FALSE, scale = FALSE)
+```
+
+Cytokines normalization:
+
+1. Center  and scale cytokines data to work with PCA on the correlation matrix $\Sigma_X = Cor(Y)$
+2. To normalize the magnitude,  divide each value of $Y$ by the total variance: $\sqrt{\mbox{tr}(\Sigma_Y)}$ 
+
+```{r, echo = TRUE}
+cyto_mtx <- scale(combined_Cyto_mtx, center = TRUE, scale = TRUE)
+cyto_tr <- sum(cyto_mtx*cyto_mtx)/(dim(cyto_mtx)[1]-1)
+cyto_mtx <- cyto_mtx/sqrt(cyto_tr)
+cyto.pca <- dudi.pca(cyto_mtx, scannf=FALSE, nf =61,
+                     center = FALSE, scale = FALSE)
+
+```
+
+
+## Combine the tables using co-inertia
+
+Co-inertia is available through R package ade4. It takes ade4 PCA objects and performes joint eigendecomposition. 
+
+```{r, echo = TRUE}
+coin <- coinertia(taxa.pca, cyto.pca, scannf = FALSE, nf = 2)
+```
+
+RV coefficient -- measure of similarity between 16S and cytokines tables
+
+```{r, echo = TRUE}
+RV <- coin$RV
+RV
+```
+
+## Visualization of output
+
+
+```{r, echo= FALSE}
+p.vars <- PlotCoinVars(coin, tab1 = "taxa", tab2 = "cytokines", 
+             Labels1 = NULL, #colnames(combined_16S_mtx)
+             Labels2 = colnames(combined_Cyto_mtx),
+             label = TRUE,PtSize=2,LblSize=3,
+             hjust = 0, vjust = -1.5)
+p.vars
+```
+
+
+Interpretation of the plots is similar to examining PCA results. 
+
+Plot below provides variables projection on common co-inertia axes. 
+
+1. Variables projected close to each other reflect similarilty within and across two data sets 
+
+2. Variables with larger values on each component (x- and y-axes) have more importance  
+
+We start by identifying important taxa (larger component values):
+
+1. visually from the plot, or 
+
+```{r, echo = TRUE, eval = FALSE}
+taxa.inx <- c(6,  19,  24,  28,  31,  68,  69, 396)
+```
+
+2. by specifying x and y coordinates to pull all variables with coordinates larger (or smaller) than these values. Table 1 (taxa) values can be accessed $co object of coinertia output named coin. 
+
+```{r}
+kable(head(coin$co),
+      digits = 5)%>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)
+
+```
+
+
+```{r, echo = FALSE}
+#extract scores for each table
+  x = colnames(coin$co)[1]
+  y = colnames(coin$co)[2]
+  
+#first table data
+  df1 <- data.frame(coin$co$Comp1, coin$co$Comp2, Labels1 = 1:nrow(coin$co), rep("taxa", nrow(coin$co)))
+  rownames(df1) <- rownames(coin$co)
+  names(df1) <- c(x,y,  "Labels", "Table")
+  
+#extract influential taxa
+  xval = c(-0.002, 0.007)
+  yval = c(-0.002, 0.01)
+  taxa = subset(df1, 
+        (Comp1 < xval[1] |Comp1 > xval[2]) &  (Comp2 < yval[1] |Comp2 > yval[2]))
+  taxa.inx <-taxa$Labels
+```
+
+Similarly, table 2 (here cytokines) variables loadings can be extracted from the  $li object of coinertia output named coin. 
+
+```{r}
+kable(head(coin$li),
+      digits = 5)%>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)
+```
+
+
+```{r, echo = FALSE}
+taxa.ids <- colnames(combined_16S_mtx)[taxa.inx]
+#look up these taxa ids in phyloqes
+taxa.names <- tax_table(momspi16S_phyloseq)[rownames(tax_table(momspi16S_phyloseq)) %in% taxa.ids,c("Family", "Genus", "Species")]
+taxa.names <- cbind(taxa.ids = rownames(taxa.names), taxa.names)
+x = cbind(taxa.ids, taxa.inx)
+taxa.names <- merge(taxa.names, x, by="taxa.ids")
+```
+
+```{r, echo = FALSE}
+p.vars
+
+kable(taxa.names[,c("taxa.ids", "taxa.inx", "Family", "Genus", "Species")],
+      caption = "Influential taxa",
+      col.names =c("Greengene ID", "Plot ID", "Family", "Genus", "Species"))%>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)
+```
+
+
+Sample scores plots. Length of the arrows indicates the samples that have larger differences across two data sets.
+
+```{r, echo= FALSE}
+
+Samp.coin <- CoinertiaPlot(coin = coin, 
+                  Quant = 0.95, Prop.Var = 0.9,
+                  Env_Var=NULL, 
+                  Env_Var2 = NULL,
+                  color=NULL, shape=NULL,
+                  PtColor= "magenta",PtShape=1, PtSize=1,
+                  linetype=2, LblSize=4, 
+                  LabelsOpt = 1:nrow(coin$mX),
+                  ArrLen=0.10, ArrAngle=20)
+
+Samp.coin$p + theme_bw()
+
+```
+
+Samples with largest difference across two data sets. Samples with arrow lengths in 0.9 quantile are chosen. 
+
+```{r}
+#Taxa with major differences across two sets
+large.difs <- rownames(Samp.coin$Dissimilarity[Samp.coin$Dissimilarity$Quantile >= 0.9, ])
+```
+
+Samples with largest differences across two data sets.
+
+```{r}
+small.difs <- rownames(Samp.coin$Dissimilarity[Samp.coin$Dissimilarity$Quantile < 0.1, ])
+```
+
+
+
+```{r, echo = FALSE}
+df1 <- data.frame(large_ID = match(large.difs, rownames(coin$mX)), large_name = large.difs)
+df2 <- data.frame(small_ID = match(small.difs, rownames(coin$mX)), small_name = small.difs)
+df <- cbind(df1, df2)
+
+```
+
+
+## Examine these taxa and cytokines
+
+```{r, echo=FALSE}
+#select cytokines from the same samples
+coi.16S = combined_16S_mtx[,taxa.ids]
+#subset to samples identified earlier as those that that have largest distance on COI plots
+coi.16S.large = coi.16S[rownames(coi.16S) %in% large.difs, ]
+coi.16S.small = coi.16S[rownames(coi.16S) %in% small.difs, ]
+
+coi.16S.large.m <- melt(coi.16S.large)
+coi.16S.large.m$Var2 <-factor(coi.16S.large.m$Var2, levels = taxa.ids)
+
+coi.16S.small.m <- melt(coi.16S.small)
+coi.16S.small.m$Var2 <-factor(coi.16S.small.m$Var2, levels = taxa.ids)
+```
+
+
+```{r, echo=FALSE}
+
+p.16S.large <- ggplot() + geom_bar(aes(y = value, x = Var1, fill = Var2), data = coi.16S.large.m,
+                           stat="identity") + 
+                scale_fill_manual(values=c("gold", "yellow3", "goldenrod2",
+                                           "red", "yellow", "magenta",
+                                           "darkolivegreen4", "aquamarine2"), 
+                       breaks=c("354905", "134467", "137580", "137183", "332718", "851726","29566",  "309133"),
+                       labels=c("Lactobacillus", "Lactobacillus", "Lactobacillus",
+                                "Gardnerella", "Lactobacillus", "Megasphaera",
+                                "Sneathia", "Enterococcaceae_NA"))+
+                theme_bw()+
+                theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 11),
+                      legend.title = element_blank(), legend.position = "bottom")+
+                xlab("") + ylab("")
+
+p.16S.small <- ggplot() + geom_bar(aes(y = value, x = Var1, fill = Var2), data = coi.16S.small.m,
+                           stat="identity") + 
+                scale_fill_manual(values=c("gold", "yellow3", "goldenrod2",
+                                           "red", "yellow", "magenta",
+                                           "darkolivegreen4", "aquamarine2"), 
+                       breaks=c("354905", "134467", "137580", "137183", "332718", "851726","29566",  "309133"),
+                       labels=c("Lactobacillus", "Lactobacillus", "Lactobacillus",
+                                "Gardnerella", "Lactobacillus", "Megasphaera",
+                                "Sneathia", "Enterococcaceae_NA"))+ 
+                theme_bw()+
+                theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 11),
+                      legend.title = element_blank(), legend.position = "bottom")+
+                xlab("") + ylab("")
+```
+
+
+```{r, echo=FALSE}
+#select cytokines from the same samples
+coi.cyto = combined_Cyto_mtx[,c("IL-1b", "IP-10", "RANTES", "MCP-1(MCAF)", "G-CSF", "GM-CSF", "FGF", "TNF-a", "IL-1ra", "IL-9", "IL-17")]
+#normalize cytokines expression to its maximum across all samples
+coi.cyto = apply(coi.cyto, 2, function(x) x/max(x))
+#subset to samples identified earlier as those that that have largest distance on COI plots
+coi.cyto.large = coi.cyto[rownames(coi.cyto) %in% large.difs, ]
+coi.cyto.small = coi.cyto[rownames(coi.cyto) %in% small.difs, ]
+
+```
+
+```{r, echo=FALSE}
+cols <- c("IL-1b" = "deepskyblue", "IP-10" = "yellow", "IL-6" = "pink", "RANTES" = "goldenrod2", "MCP-1(MCAF)" = "yellow", "G-CSF" = "yellow3", "GM-CSF" = "yellow3","FGF" = "blue", "TNF-a" = "cyan", "IL-1ra" = "bisque3", "IL-9" = "brown", "IL-17" = "red")
+
+coi.cyto.large.m <- melt(coi.cyto.large)
+p.cyto.large <- ggplot() + geom_bar(aes(y = value, x = Var1, fill = Var2), data = coi.cyto.large.m,
+                           stat="identity") + theme_bw()+
+                scale_fill_manual(values =cols)+
+                theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 11),
+                      legend.title = element_blank(), legend.position = "bottom")+
+                xlab("") + ylab("")
+
+p.cyto.small <- ggplot() + geom_bar(aes(y = value, x = Var1, fill = Var2), data = melt(coi.cyto.small),
+                           stat="identity") + theme_bw()+
+                scale_fill_manual(values =cols)+
+                theme(axis.text.x = element_text(angle = 90, hjust = 1, size = 11),
+                      legend.title = element_blank(), legend.position = "bottom")+
+                ylim(layer_scales(p.cyto.large)$y$range$range)+
+                xlab("") + ylab("")
+```
+
+
+
+```{r, fig.width = 8, fig.height = 8, echo=FALSE}
+grid.arrange(p.16S.large + ggtitle("Large differences"), 
+             p.16S.small + ggtitle("Small differences"), 
+             p.cyto.large + ggtitle("Large differences"),
+             p.cyto.small + ggtitle("Small differences"),
+             ncol =2, nrow = 2)
+```
+
+
 
