@@ -180,8 +180,7 @@ View(data.frame(combined_metadata))
 
 The main function provides a `list` of `ExpressionSet` objects:
 ```{r, results="hide"}
-oral <- c("BritoIL_2016.metaphlan_bugs_list.oralcavity",
-          "Castro-NallarE_2015.metaphlan_bugs_list.oralcavity")
+oral <- c("HMP_2012.metaphlan_bugs_list.oralcavity")
 esl <- curatedMetagenomicData(oral, dryrun = FALSE)
 ```
 
