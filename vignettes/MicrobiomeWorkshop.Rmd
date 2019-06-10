@@ -133,9 +133,10 @@ library(adespatial)
 library(kableExtra)
 library(ecodist)
 library(MiRKAT)
+```
 
-source("CIAPlots.R")
-
+```{r, echo=FALSE}
+source(system.file(package='MicrobiomeWorkshop', 'vignettes', "CIAPlots.R"))
 ```
 
 
@@ -148,20 +149,6 @@ vignette("MicrobiomeWorkshop")
 Load all needed packages. These are listed in the [DESCRIPTION](https://github.com/waldronlab/MicrobiomeWorkshop/blob/master/DESCRIPTION) file: currently 
 ```{r, eval=FALSE}
 library(MicrobiomeWorkshop)
-```
-
-Bibliography
-
-```{r, echo = T, include =F}
-
-# install.packages("devtools")
-# devtools::install_github("ropensci/RefManageR")
-
-library(RefManageR)
-#need this file
-#bib <- ReadBib("~/Dropbox/MOMSPI/HMP2/BioC2019/library.bib", check = FALSE)
-BibOptions(check.entries = FALSE, style = "markdown", bib.style = "alphabetic", cite.style = 'alphabetic')
-
 ```
 
 # Introduction
@@ -258,7 +245,7 @@ This can also be converted to `phyloseq` for ecological and differential abundan
 
 
 ```{r, out.width = '100%', out.height= '70%', results='hold', echo = FALSE}
-knitr::include_graphics(file.path(getwd(), "iHMP.jpeg"))
+knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "iHMP.jpeg"))
 ```
 
 - One of the largest open data resources for studying longitudinal microbiome changes  and connection to disease
@@ -266,14 +253,14 @@ knitr::include_graphics(file.path(getwd(), "iHMP.jpeg"))
 - Novel data -- first scientific results just published  in the special collection of **Nature** and its sister journals (https://www.nature.com/articles/s41586-019-1238-8) 
 
 ```{r, out.width = '80%', out.height= '50%', results='hold', echo = FALSE}
-knitr::include_graphics(file.path(getwd(), "Nature.jpeg"))
+knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "Nature.jpeg"))
 ```
 
 - Human Microbiome Project Data Portal (https://portal.hmpdacc.org/)
 - Open data -- but not straightforward to download and work with
 
 ```{r, out.width = '100%', out.height= '70%', results='hold', echo = FALSE}
-knitr::include_graphics(file.path(getwd(), "DAC.jpeg"))
+knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "DAC.jpeg"))
 ```
 
 - Need **Aspera client** to even download the data  -- not every lab/researcher has these expertise available 
@@ -342,7 +329,7 @@ Once installed, `HMP2Data` provides functions to access the data from the three 
 - Vaginal microbiome consortium study at Virginia Commonwealth University (VCU) http://vmc.vcu.edu/momspi 
 
 ```{r, out.width = '70%', out.height= '30%', results='hold', echo = FALSE}
-knitr::include_graphics(file.path(getwd(), "momspi.jpeg"))
+knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "momspi.jpeg"))
 ```
 
 - Pre-term birth study results: https://www.nature.com/articles/s41591-019-0450-2
