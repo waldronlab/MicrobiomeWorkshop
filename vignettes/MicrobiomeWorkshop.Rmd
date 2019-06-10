@@ -116,6 +116,8 @@ Also some utility packages:
 suppressPackageStartupMessages({
   library(kableExtra)
   library(magrittr)
+  library(reshape2)
+  library(gridExtra)
 })
 ```
 

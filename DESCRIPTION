@@ -5,7 +5,11 @@ Description: This workshop covers databases and tools for accessing and analysin
 Version: 0.4.0
 Depends:
   R (>= 3.6.0),
-  Biobase (>= 2.36.0)
+  Biobase (>= 2.36.0),
+  magrittr,
+  gridExtra,
+  reshape2,
+  kableExtra
 Imports:
   HMP16SData,
   curatedMetagenomicData,
@@ -13,17 +17,13 @@ Imports:
   SummarizedExperiment,
   MultiAssayExperiment,
   dplyr,
-  magrittr,
   Hmisc,
   colorspace,
   ade4,
   vegan,
-  gridExtra,
-  reshape2,
   here,
   Matrix,
   knitr,
-  kableExtra,
   plyr,
   tableone,
   adespatial,
