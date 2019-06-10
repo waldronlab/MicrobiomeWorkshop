@@ -12,11 +12,20 @@ vignette: >
   %\VignetteEncoding[utf8]{inputenc}
 ---
 
-#Syllabus
+```{r, include=FALSE, cache=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  cache = TRUE,
+  collapse = TRUE,
+  comment = "#>"
+)
+```
 
-## Working with open-source Human Microbiome Project Data phases 1 (HMP) and 2 (iHMP): Efficient Data Access and Analysis Workflow
+# Working with open-source Human Microbiome Project Data phases 1 (HMP) and 2 (iHMP): Efficient Data Access and Analysis Workflow
 
-## Instructors names and contact information
+## Syllabus 
+
+### Instructors names and contact information
 
 1. Levi Waldron, Graduate School of Public Health and Health Policy, City University of New York, New York, NY. 
 email: Levi.Waldron@sph.cuny.edu
@@ -26,7 +35,7 @@ email: nzhao10@jhu.edu
 
 3. Ekaterina Smirnova, Department of Biostatistics, Virginia Commonwealth University, Richmond, VA. email: ekaterina.smirnova@vcuhealth.org
 
-## Workshop Description
+### Workshop Description
 
 The composition of microbial species in a human body is essential for maintaining human health, and it is associated with a number of diseases including obesity, bowel inflammatory disease, and bacterial vaginosis.  Over the last decade, microbiome data analysis  almost entirely shifted towards using samples taken directly from various sites of human body and  to explore a  large number of microbes using 16S or whole metagenome sequencing. This technological shift has led to a radical change  in the data collected and led to the creation  of the  Human Microbiome Project (HMP) in 2008. With the growth and success of the microbiomics field, the size and complexity, and availability of the microbiome data in any given experiment have increased exponentially.  Publicly-available data sets from amplicon sequencing of two 16S ribosomal RNA variable regions, with extensive controlled-access participant data, provide a reference for ongoing microbiome studies. However, utilization of these data sets can be hindered by the complex bioinformatic steps required to access, import, decrypt, and merge the various components in formats suitable for ecological and statistical analysis. 
 
@@ -47,18 +56,6 @@ Background reading:
 
 * Schiffer L, Azhar R, Shepherd L, Ramos M, Geistlinger L, Huttenhower C, Dowd JB, Segata N, Waldron L (2019). "HMP16SData: Efficient Access to the Human Microbiome Project through Bioconductor." American Journal of Epidemiology. doi: 10.1093/aje/kwz006.
 
-
-
-### Workshop Participation
-
-Workshop participants are expected to bring a lap top, download HMP16SData and HMP2Data packages in advance, and be able to execute  R commands throughout workshop. 
-
-### _R_ / _Bioconductor_ packages used
-
-HMP16SData
-
-HMP2Data
-
 ### Time outline 
 
 | Activity                     | Time |
@@ -68,7 +65,7 @@ HMP2Data
 | Microbiome Analyses          | 15m  |
 | Multi-omics data integration | 15m  |
 
-## Workshop goals and objectives
+### Workshop goals and objectives
 
 The main purpose of this workshop is to help researchers interested in public microbiome data to start using  the HMP16SData and HMP2Data packages.  
 
@@ -93,62 +90,36 @@ The main purpose of this workshop is to help researchers interested in public mi
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Install packages
+## Setup
 
-Installing all necessary packages can be accomplished by the following command:
+Installing all packages necessary for this workshop can be accomplished by the following command:
 
 ```{r, eval=FALSE}
-library(BiocManager)
-install("waldronlab/MicrobiomeWorkshop", build_vignettes=TRUE, 
+BiocManager::install("waldronlab/MicrobiomeWorkshop", build_vignettes=TRUE, 
         dependencies=TRUE)
 ```
 
-Additional dependencies
-
-```{r, echo = TRUE, message=FALSE}
-#BiocManager::install("jstansfield0/HMP2Data", auth_token = "35f0903098e0c9ef30faf7514e382e6bbd5c7179")
-
-library(HMP2Data)
-library(phyloseq)
-library(SummarizedExperiment)
-library(MultiAssayExperiment)
-library(dplyr)
-library(magrittr)
-library(Hmisc)
-library(colorspace)
-library(ade4)
-library(vegan)
-library(gridExtra)
-library(reshape2)
-library(here)
-library(Matrix)
-library(knitr)
-library(kableExtra)
-library(plyr)
-library(tableone)
-library(adespatial)
-library(kableExtra)
-library(ecodist)
-library(MiRKAT)
+Load the workshop package:
+```{r, eval=FALSE}
+library(MicrobiomeWorkshop)
 ```
-
-```{r, echo=FALSE}
-source(system.file(package='MicrobiomeWorkshop', 'vignettes', "CIAPlots.R"))
-```
-
 
 Then you should be able to view the compiled vignette:
 ```{r, eval=FALSE}
 vignette("MicrobiomeWorkshop")
 ```
 
+Note, all packages are listed in the [DESCRIPTION](https://github.com/waldronlab/MicrobiomeWorkshop/blob/master/DESCRIPTION) file of this workshop.
 
-Load all needed packages. These are listed in the [DESCRIPTION](https://github.com/waldronlab/MicrobiomeWorkshop/blob/master/DESCRIPTION) file: currently 
-```{r, eval=FALSE}
-library(MicrobiomeWorkshop)
+Also some utility packages:
+```{r, cache=FALSE}
+suppressPackageStartupMessages({
+  library(kableExtra)
+  library(magrittr)
+})
 ```
 
-# Introduction
+## Introduction
 
 Bioconductor provides curated resources of microbiome data.  Most microbiome data are generated either by targeted amplicon sequencing (usually of variable regions of the 16S ribosomal RNA gene) or by metagenomic shotgun sequencing (MGX). These two approaches are analyzed by different sequence analysis tools, but downstream statistical and ecological analysis can involve any of the following types of data:
 
@@ -217,7 +188,7 @@ ExpressionSet2phyloseq( esl[[1]], phylogenetictree = TRUE)
 
 See the documentation of `phyloseq` for more on ecological and differential abundance analysis of the microbiome.
 
-# HMP16SData: 16S rRNA Sequencing Data from the Human Microbiome Project
+## HMP16SData: 16S rRNA Sequencing Data from the Human Microbiome Project
 
 ```{r, results='hide'}
 suppressPackageStartupMessages(library(HMP16SData))
@@ -325,7 +296,6 @@ Load 16S data as a matrix, rows are Greengene IDs, columns are sample names:
 
 ```{r, echo = TRUE}
 data("momspi16S_mtx")
-
 ```
 
 Load the Greengenes taxonomy table as a matrix, rows are Greengene IDs, columns are taxonomic ranks:
@@ -422,7 +392,6 @@ Load 16S data as a matrix, rows are Greengene IDs, columns are sample names:
 
 ```{r}
 data("T2D16S_mtx")
-
 ```
 
 Load the Greengenes taxonomy table as a matrix, rows are Greengene IDs, columns are taxonomic ranks:
@@ -430,7 +399,6 @@ Load the Greengenes taxonomy table as a matrix, rows are Greengene IDs, columns 
 ```{r}
 data("T2D16S_tax")
 colnames(T2D16S_tax)
-
 ```
 
 Load the 16S sample annotation data as a matrix, rows are samples, columns are annotations:
@@ -438,7 +406,6 @@ Load the 16S sample annotation data as a matrix, rows are samples, columns are a
 ```{r}
 data("T2D16S_samp")
 colnames(T2D16S_samp)
-
 ```
 
 The T2D `phyloseq` object can be loaded like so.
