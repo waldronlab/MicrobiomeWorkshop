@@ -625,7 +625,7 @@ kable(head(alpha_df),
 
 #### Beta Diversity Definitions 
 
-Beta diversity describes how samples vary against each other. Beta diversity is typically the thinking behind “clustering” algorithms that show differences or similarities among samples. For example, we may be intrested in the differences in gut microbiome between non IBD and IBD patients. 
+Beta diversity describes how samples vary against each other. Beta diversity is typically the thinking behind "clustering" algorithms that show differences or similarities among samples. For example, we may be intrested in the differences in gut microbiome between non IBD and IBD patients. 
 
 List of the commonly used beta-diversities:
 
