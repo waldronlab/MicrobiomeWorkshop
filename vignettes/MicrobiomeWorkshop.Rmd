@@ -268,14 +268,6 @@ knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "
 
 ### HMP2Data package 
 
-`HMP2Data` package is currently under review. Once accepted to Bioconductor, it can be installed using `BiocManager` as follows. 
-
-*Note: not available yet*
-
-```{r, eval = FALSE}
-BiocManager::install("HMP2Data")
-```
-
 The following packages will be used in this vignette to provide demonstrative
 examples of what a user might do with `r BiocStyle::Biocpkg("HMP2Data")`.
 
@@ -289,19 +281,16 @@ library(UpSetR)
 ```
 
 
-Current (development) version can be installed can be installed from John Stansfield's GitHub repository https://github.com/jstansfield0/HMP2Data as follows. This is the version used for the workshop.
+`HMP2Data` package is currently under review as a Bioconductor package. Current (development) version can be installed can be installed from John Stansfield's GitHub repository https://github.com/jstansfield0/HMP2Data as follows. This is the version used for the workshop.
 
-```{r}
-if(!require("HMP2Data")){
-    BiocStyle::CRANpkg("devtools")
-    devtools::install_github("jstansfield0/HMP2Data")
-}
+```{r, eval=FALSE}
+BiocManager::install("jstansfield0/HMP2Data")
 ```
 
 The stable version is available at the dozmorovlab GitHub repository https://github.com/dozmorovlab/HMP2Data 
 
 ```{r, eval = FALSE}
-devtools::install_github("dozmorovlab/HMP2Data")
+BiocManager::install("dozmorovlab/HMP2Data")
 ```
 
 Load `HMP2Data` package
