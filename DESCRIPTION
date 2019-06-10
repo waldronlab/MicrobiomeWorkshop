@@ -11,6 +11,7 @@ Depends:
   reshape2,
   kableExtra
 Imports:
+  HMP2Data,
   HMP16SData,
   curatedMetagenomicData,
   phyloseq,
