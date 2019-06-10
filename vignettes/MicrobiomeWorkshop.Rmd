@@ -119,6 +119,12 @@ suppressPackageStartupMessages({
 })
 ```
 
+Source some miscellaneous R scripts for HMP2Data component:
+```{r}
+source(system.file(package='MicrobiomeWorkshop', 'vignettes', "CIAPlots.R"))
+source(system.file(package='MicrobiomeWorkshop', 'vignettes', "ScreePlot.R"))
+```
+
 ## Introduction
 
 Bioconductor provides curated resources of microbiome data.  Most microbiome data are generated either by targeted amplicon sequencing (usually of variable regions of the 16S ribosomal RNA gene) or by metagenomic shotgun sequencing (MGX). These two approaches are analyzed by different sequence analysis tools, but downstream statistical and ecological analysis can involve any of the following types of data:
@@ -243,12 +249,17 @@ The following packages will be used in this vignette to provide demonstrative
 examples of what a user might do with `r BiocStyle::Biocpkg("HMP2Data")`.
 
 ```{r, message=FALSE, warning=FALSE}
-library(phyloseq)
-library(SummarizedExperiment)
-library(MultiAssayExperiment)
-library(dplyr)
-library(ggplot2)
-library(UpSetR)
+suppressPackageStartupMessages({
+  library(phyloseq)
+  library(SummarizedExperiment)
+  library(MultiAssayExperiment)
+  library(dplyr)
+  library(ggplot2)
+  library(UpSetR)
+  library(ade4)
+  library(vegan)
+  library(MiRKAT)
+})
 ```
 
 
@@ -610,12 +621,12 @@ List of the commonly used beta-diversities:
 
 par(mfrow = c(1,2))
 jac <- as.matrix(distance(t(otu_table(IBD)), method = "jaccard"))
-mod1 <- betadisper(as.dist(jac), as.factor(IBD16S_samp$diagnosis))
+mod1 <- vegan::betadisper(as.dist(jac), as.factor(IBD16S_samp$diagnosis))
 plot(mod1, ellipse = TRUE, hull = FALSE, main="Jaccard Distance", xlab="PC 1", ylab="PC 2", sub=NULL)
 box()
 
-bc = as.matrix(bcdist(t(otu_table(IBD))))
-mod2 <- betadisper(as.dist(bc), as.factor(IBD16S_samp$diagnosis))
+bc = as.matrix(ecodist::bcdist(t(otu_table(IBD))))
+mod2 <- vegan::betadisper(as.dist(bc), as.factor(IBD16S_samp$diagnosis))
 plot(mod2, ellipse = TRUE, hull = FALSE, main="Bray-Curtis Dissimilarity", xlab="PC 1", ylab="PC 2", sub=NULL, xlim = c(-0.2, 0.2))
 legend("bottomright", legend=c("CD", "nonIBD", "UC"), pch = 1:3, col=c("Black", "red", "Green"), cex=1.3, box.lty=0)
 box()
@@ -638,11 +649,11 @@ IBD0 %<>%
   prune_taxa(IBD0)
 
 jac0 <- as.matrix(distance(t(otu_table(IBD0)), method = "jaccard"))
-bc0 =  as.matrix(bcdist(t(otu_table(IBD0))))
+bc0 =  as.matrix(ecodist::bcdist(t(otu_table(IBD0))))
 CD = as.numeric(sample_data(IBD0)$diagnosis == "CD")
 gender = as.numeric(factor(sample_data(IBD0)$subject_gender))
 
-fit = adonis(bc0 ~ gender + CD, permutations=500)
+fit = vegan::adonis(bc0 ~ gender + CD, permutations=500)
 kable(fit$aov.tab,
       digits = 3,caption = "PERMANOVA result using Bray-Curtis distance") %>% kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)  
 ```
@@ -659,9 +670,9 @@ $\boldsymbol f \sim N(0, \tau\boldsymbol K)$, in which $\boldsymbol K$ is a simi
 Multiple kernels (distances) are allowed simulatenously in this framework, making this procedure robust to the underlying association patterns. 
 
 ```{r}
- K_bc = D2K(bc0); K_jac = D2K(jac0)
+ K_bc = MiRKAT::D2K(bc0); K_jac = D2K(jac0)
  y = ifelse(sample_data(IBD0)$diagnosis == "CD",1, 0 )
- out = MiRKAT(y=y, X = gender, Ks = list(K_bc, K_jac), out_type = "D") 
+ out = MiRKAT::MiRKAT(y=y, X = gender, Ks = list(K_bc, K_jac), out_type = "D") 
 ```
 
 
@@ -791,7 +802,7 @@ taxa_mtx <- scale(combined_16S_mtx, center = TRUE, scale = FALSE)
 #use fast trace computation formula: tr(A^B) = sum(A*B), where '*' operator refers to elemetwise product
 taxa_tr <- sum(taxa_mtx*taxa_mtx)/(dim(taxa_mtx)[1]-1)
 taxa_mtx <- taxa_mtx/sqrt(taxa_tr)
-taxa.pca <- dudi.pca(taxa_mtx, scannf=FALSE, nf =61,
+taxa.pca <- ade4::dudi.pca(taxa_mtx, scannf=FALSE, nf =61,
                      center = FALSE, scale = FALSE)
 ```
 
@@ -804,7 +815,7 @@ Cytokines normalization:
 cyto_mtx <- scale(combined_Cyto_mtx, center = TRUE, scale = TRUE)
 cyto_tr <- sum(cyto_mtx*cyto_mtx)/(dim(cyto_mtx)[1]-1)
 cyto_mtx <- cyto_mtx/sqrt(cyto_tr)
-cyto.pca <- dudi.pca(cyto_mtx, scannf=FALSE, nf =61,
+cyto.pca <- ade4::dudi.pca(cyto_mtx, scannf=FALSE, nf =61,
                      center = FALSE, scale = FALSE)
 
 ```
@@ -815,7 +826,7 @@ cyto.pca <- dudi.pca(cyto_mtx, scannf=FALSE, nf =61,
 Co-inertia is available through R package ade4. It takes ade4 PCA objects and performes joint eigendecomposition. 
 
 ```{r, echo = TRUE}
-coin <- coinertia(taxa.pca, cyto.pca, scannf = FALSE, nf = 2)
+coin <- ade4::coinertia(taxa.pca, cyto.pca, scannf = FALSE, nf = 2)
 ```
 
 RV coefficient -- measure of similarity between 16S and cytokines tables
