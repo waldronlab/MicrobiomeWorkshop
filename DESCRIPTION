@@ -6,6 +6,31 @@ Version: 0.4.0
 Depends:
   R (>= 3.6.0),
   Biobase (>= 2.36.0)
+Imports:
+  HMP16SData,
+  curatedMetagenomicData,
+  jstansfield0/HMP2Data@cce469e,
+  phyloseq,
+  SummarizedExperiment,
+  MultiAssayExperiment,
+  dplyr,
+  magrittr,
+  Hmisc,
+  colorspace,
+  ade4,
+  vegan,
+  gridExtra,
+  reshape2,
+  here,
+  Matrix,
+  knitr,
+  kableExtra,
+  plyr,
+  tableone,
+  adespatial,
+  kableExtra,
+  ecodist,
+  MiRKAT
 Suggests:
   knitr,
   rmarkdown

@@ -106,10 +106,7 @@ install("waldronlab/MicrobiomeWorkshop", build_vignettes=TRUE,
 Additional dependencies
 
 ```{r, echo = TRUE, message=FALSE}
-#token 35f0903098e0c9ef30faf7514e382e6bbd5c7179
-#BiocManager::install("HMP2Data")
-
-#devtools::install_github("jstansfield0/HMP2Data", auth_token = "35f0903098e0c9ef30faf7514e382e6bbd5c7179")
+#BiocManager::install("jstansfield0/HMP2Data", auth_token = "35f0903098e0c9ef30faf7514e382e6bbd5c7179")
 
 library(HMP2Data)
 library(phyloseq)
@@ -233,15 +230,9 @@ V13()
 
 This can also be converted to `phyloseq` for ecological and differential abundance analysis; see the `HMP16SData` vignette for details.
 
-<!---
-## How to add figures
+## HMP2Data
 
-`r knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', 'fig.png'))`
---->
-
-# HMP2Data
-
-## Integrative Human Microbiome Project (iHMP)  https://hmpdacc.org/ihmp/
+### Integrative Human Microbiome Project (iHMP)  https://hmpdacc.org/ihmp/
 
 
 ```{r, out.width = '100%', out.height= '70%', results='hold', echo = FALSE}
@@ -275,7 +266,7 @@ knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "
 4. merge omics data.
 
 
-## HMP2Data package 
+### HMP2Data package 
 
 `HMP2Data` package is currently under review. Once accepted to Bioconductor, it can be installed using `BiocManager` as follows. 
 
@@ -323,7 +314,7 @@ library(HMP2Data)
 Once installed, `HMP2Data` provides functions to access the data from the three major HMP2 studies. 
 
 
-### Multi-omics microbiome study pregnancy initiavite (MOMS-PI) 
+#### Multi-omics microbiome study pregnancy initiavite (MOMS-PI) 
 
 
 - Vaginal microbiome consortium study at Virginia Commonwealth University (VCU) http://vmc.vcu.edu/momspi 
@@ -339,7 +330,7 @@ knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "
 - Data structure gives many opportunities for statistical models development and data exploration 
 
 
-#### 16S data 
+##### 16S data 
 
 Load 16S data as a matrix, rows are Greengene IDs, columns are sample names:
 
@@ -372,7 +363,7 @@ momspi16S_phyloseq <- momspi16S()
 momspi16S_phyloseq
 ```
 
-#### Cytokine data
+##### Cytokine data
 
 The MOMS-PI cytokine data can be loaded as a matrix, rownames are cytokine names, colnames are sample names:
 
@@ -398,7 +389,7 @@ momspiCyto
 ```
 
 
-### IBD
+#### IBD
 
 Load 16S data as a matrix, rows are SILVA IDs, columns are sample names:
 
@@ -436,7 +427,7 @@ sample_data(IBD)$subject_race <- ifelse(sample_data(IBD)$race == "White", "cauca
 ```
 
 
-### T2D
+#### T2D
 
 Load 16S data as a matrix, rows are Greengene IDs, columns are sample names:
 
@@ -468,9 +459,9 @@ T2D <- T2D16S()
 T2D
 ```
 
-## Features
+### Features
 
-### Frequency Table Generation
+#### Frequency Table Generation
 
 The sample-level annotation data contianed in `HMP2Data` can be summarized using the `table_two` function. First, we need to make a list of the `phyloseq` and `SummarizedExperiment` objects which can then be entered into the `table_two()` table generating function.
 
@@ -480,7 +471,7 @@ list("MOMS-PI 16S" = momspi16S_phyloseq, "MOMS-PI Cytokines" = momspiCyto, "IBD 
 ```
 
 
-### Visits Histograms
+#### Visits Histograms
 
 We can plot the histogram of the number of samples at each visit for all studies. 
 Note that the X-axis is capped at count of 40 for better visualization.
@@ -502,9 +493,9 @@ p2
 
 Note that there are `r sum(plot_visits$visits > 40)` samples at visit numbers over 40.
 
-## UpsetR plots
+### UpsetR plots
 
-### MOMS-PI 16S rRNA data
+#### MOMS-PI 16S rRNA data
 
 Here we plot the body sites which samples were taken from for each patient in the MOMS-PI 16S data.
 
@@ -519,7 +510,7 @@ momspi_upset <- data.frame(patient = momspi_upset$Group.1, tmp)
 upset(momspi_upset, order.by = 'freq', matrix.color = "blue", text.scale = 2)
 ```
 
-### MOMS-PI Cytokines data
+#### MOMS-PI Cytokines data
 
 Here we plot the body sites which samples were taken from for each patient in the MOMS-PI cytokines data.
 
@@ -534,7 +525,7 @@ momspiCyto_upset <- data.frame(patient = momspiCyto_upset$Group.1, tmp)
 upset(momspiCyto_upset, order.by = 'freq', matrix.color = "blue", text.scale = 2)
 ```
 
-### IBD data
+#### IBD data
 
 The IBD patients only had samples taken from the feces.
 
@@ -550,7 +541,7 @@ The IBD patients only had samples taken from the feces.
 <!-- ``` -->
 
 
-### T2D data
+#### T2D data
 
 Here we plot the body sites which samples were taken from for each patient in the T2D 16S rRNA data.
 
@@ -566,7 +557,7 @@ upset(T2D_upset, order.by = 'freq', matrix.color = "blue", text.scale = 2)
 ```
 
 
-# Microbiome Analyses: IBD example
+## Microbiome Analyses: IBD example
 
 
 ```{r}
@@ -593,8 +584,10 @@ stratified[,!(colnames(stratified) %in% "test")]%>%
 ```
 
 
-##Alpha diversity analysis 
-### Alpha Diversity Definitions 
+###Alpha diversity analysis 
+
+#### Alpha Diversity Definitions 
+
 Alpha diversity is a within-sample diversity measurement that models the richness and/or eveness of the microbial community. 
 <!--
 ![Intuitive explanation of alpha, beta and Gamma diversity.](diversity.png)
@@ -613,7 +606,7 @@ Different alpha diversities emphasize different aspect of the community. Commonl
 
 Of course, the alpha diversity measurement is impacted by the sequencing depth (total number of reads per sample). Rarefying (through vegan:rarefy) is necessary before calculating alpha diversity.
 
-### Comparing Alpha Diversities between Groups
+#### Comparing Alpha Diversities between Groups
 
 We can use "plot_richness" from phyloseq package to plot the alpha diversities. 
 
@@ -639,9 +632,9 @@ kable(head(alpha_df),
 ```
 
 
-## Beta diversity analysis 
+### Beta diversity analysis 
 
-### Beta Diversity Definitions 
+#### Beta Diversity Definitions 
 
 Beta diversity describes how samples vary against each other. Beta diversity is typically the thinking behind “clustering” algorithms that show differences or similarities among samples. For example, we may be intrested in the differences in gut microbiome between non IBD and IBD patients. 
 
@@ -655,7 +648,7 @@ List of the commonly used beta-diversities:
 |Bray-Curtis|Quantitative|$1 - \frac{2C_{i,j}}{S_i + S_j}$|
 |Jaccard | Qualitative| $\frac{|A \cap B|}{|A \cup B|}$|
 
-### Comparing Beta Diversities between Groups
+#### Comparing Beta Diversities between Groups
 
 ```{r, warning =F}
 
@@ -673,7 +666,7 @@ box()
 ```
 
 
-####Permutational Multivariate Analysis of Variance
+#####Permutational Multivariate Analysis of Variance
 
 Permutational multivariate analysis of variance (PERMANOVA) [@McArdle2001Fit], a non-parametric multivariate statistical test, is one commonly used for assessing the association between microbiome community and a phenotype (e.g., IBD or not). 
 
@@ -698,7 +691,7 @@ kable(fit$aov.tab,
       digits = 3,caption = "PERMANOVA result using Bray-Curtis distance") %>% kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)  
 ```
 
-#### Microbiome Regression Kernel Association Test (MiRKAT)
+##### Microbiome Regression Kernel Association Test (MiRKAT)
 
 MiRKAT: a regression approach for flexibly associating the microbial community with phenotype of interest [@Zhao2015MiRKAT]. The method also has extensions that can handle longitudinal measures [@GLMMMiRKAT], multivariate [@Zhan_MMiRKAT] and survial outcomes [@Plantinga2017].  
 
@@ -716,7 +709,7 @@ Multiple kernels (distances) are allowed simulatenously in this framework, makin
 ```
 
 
-# Multi-omics data integration: MOMS-PI example
+## Multi-omics data integration: MOMS-PI example
 
 Combine 16S and cytokines data
 
@@ -818,7 +811,7 @@ all(rownames(combined_16S_mtx) == rownames(combined_16S_mtx))
 ```
 
 
-## Co-inertia analysis
+### Co-inertia analysis
 
 Basics:
 
@@ -861,7 +854,7 @@ cyto.pca <- dudi.pca(cyto_mtx, scannf=FALSE, nf =61,
 ```
 
 
-## Combine the tables using co-inertia
+### Combine the tables using co-inertia
 
 Co-inertia is available through R package ade4. It takes ade4 PCA objects and performes joint eigendecomposition. 
 
@@ -876,7 +869,7 @@ RV <- coin$RV
 RV
 ```
 
-## Visualization of output
+### Visualization of output
 
 
 ```{r, echo= FALSE}
@@ -1002,7 +995,7 @@ df <- cbind(df1, df2)
 ```
 
 
-## Examine these taxa and cytokines
+### Examine these taxa and cytokines
 
 ```{r, echo=FALSE}
 #select cytokines from the same samples
