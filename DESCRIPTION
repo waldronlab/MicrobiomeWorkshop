@@ -9,7 +9,6 @@ Depends:
 Imports:
   HMP16SData,
   curatedMetagenomicData,
-  jstansfield0/HMP2Data@cce469e,
   phyloseq,
   SummarizedExperiment,
   MultiAssayExperiment,
@@ -31,16 +30,18 @@ Imports:
   kableExtra,
   ecodist,
   MiRKAT
+Remotes:
+  jstansfield0/HMP2Data@cce469e
 Suggests:
   knitr,
   rmarkdown
 Author:
-  Levi Waldron
-  Ni Zhao
+  Levi Waldron,
+  Ni Zhao,
   Ekaterina Smirnova
 Maintainer: Levi Waldron <lwaldron.research@gmail.com>
 License: Creative Commons Attribution 4.0 International License
 LazyData: true
 VignetteBuilder: knitr
 biocViews: MicrobiomeData
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1
