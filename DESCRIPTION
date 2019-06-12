@@ -8,8 +8,7 @@ Depends:
   Biobase (>= 2.36.0),
   magrittr,
   gridExtra,
-  reshape2,
-  kableExtra
+  reshape2
 Imports:
   HMP2Data,
   HMP16SData,
@@ -24,12 +23,14 @@ Imports:
   vegan,
   here,
   Matrix,
-  knitr,
   plyr,
   tableone,
   adespatial,
   kableExtra,
   ecodist,
+  summarytools,
+  UpSetR,
+  ggplot2,
   MiRKAT
 Remotes:
   jstansfield0/HMP2Data@cce469e
