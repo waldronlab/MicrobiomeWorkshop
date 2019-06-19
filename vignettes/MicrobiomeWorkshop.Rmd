@@ -99,6 +99,7 @@ BiocManager::install("waldronlab/MicrobiomeWorkshop", build_vignettes=TRUE,
         dependencies=TRUE)
 ```
 
+
 Load the workshop package:
 ```{r, eval=FALSE}
 library(MicrobiomeWorkshop)
@@ -124,7 +125,6 @@ suppressPackageStartupMessages({
 Source some miscellaneous R scripts for HMP2Data component:
 ```{r}
 source(system.file(package='MicrobiomeWorkshop', 'vignettes', "CIAPlots.R"))
-source(system.file(package='MicrobiomeWorkshop', 'vignettes', "ScreePlot.R"))
 ```
 
 ## Introduction
@@ -343,7 +343,7 @@ data("momspiCyto_mtx")
 momspiCyto_mtx[1:5, 1:3]
 ```
 
-The cytokine data has `r nrow(momspiCyto_mtx)` rows and `r ncol(momspiCyto_mtx)` columns.
+The cytokine data has `r nrow(momspiCyto_mtx)` variables (cytokines) and `r ncol(momspiCyto_mtx)` samples.
 
 Load the cytokine sample annotation data as a matrix, rows are samples, columns are annotations:
 
@@ -360,7 +360,20 @@ momspiCyto
 ```
 
 
-#### IBD
+#### Inflammatory bowel diseases: IBD
+
+* Fecal microbiome study 3 groups: Crohn’s disease, ulcerative colitis and controls
+
+* Follow subjects for 1 year 
+
+* Data available at 
+
+https://ibdmdb.org/tunnel/public/summary.html
+
+
+```{r, out.width = '100%', out.height= '70%', results='hold', echo = FALSE}
+knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "IBD.jpeg"))
+```
 
 Load 16S data as a matrix, rows are SILVA IDs, columns are sample names:
 
