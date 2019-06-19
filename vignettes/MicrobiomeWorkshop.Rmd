@@ -293,7 +293,7 @@ Once installed, `HMP2Data` provides functions to access the data from the three 
 
 - Vaginal microbiome consortium study at Virginia Commonwealth University (VCU) http://vmc.vcu.edu/momspi 
 
-```{r, out.width = '70%', out.height= '30%', results='hold', echo = FALSE}
+```{r, out.width = '50%', out.height= '20%', results='hold', echo = FALSE}
 knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "momspi.jpeg"))
 ```
 
@@ -645,9 +645,9 @@ List of the commonly used beta-diversities:
 
 | Diversity        |Description           |Formula| 
 | ------------- |:-------------:|:-----:|
-|UniFrac   |Qualitative, Phylogenetics-based |$\sum^n_{i=1} \frac{b_i|I(p_i^A > 0)-I(p_i^B > 0)|}{\sum_{i=1}^n b_i}$ | 
-|Weighted UniFrac     |Quantitative,Phylogenetics-based|$\frac{\sum_{i=1}^n b_i|p_i^A - p_i^B|}{\sum_{i=1}^n b_i(p_i^A + p_i^B)}$   |
-|Generalized UniFrac |Compromise between the previous two |$\frac{\sum_{i=1}^n b_i (p_i^A + p_i^B)^{\alpha} |\frac{p_i^A - p_i^B}{p_i^A + p_i^B}|} {\sum_{i=1}^nb_i(p_i^A + p_i^B)^{\alpha}}$ |
+|UniFrac   |Qualitative, Phylogenetics-based |$\sum_{i=1}^n}\frac{b_i|I(p_i^A > 0)-I(p_i^B > 0)|}{\sum_{i=1}^n b_i}$| 
+|Weighted UniFrac     |Quantitative,Phylogenetics-based|$\frac{\sum_{i=1}^n b_i|p_i^A - p_i^B|}{\sum_{i=1}^n b_i(p_i^A + p_i^B)}$|
+|Generalized UniFrac |Compromise between the previous two |$\frac{\sum_{i=1}^n b_i (p_i^A + p_i^B)^{\alpha} |\frac{p_i^A - p_i^B}{p_i^A + p_i^B}|} {\sum_{i=1}^nb_i(p_i^A + p_i^B)^{\alpha}}$|
 |Bray-Curtis|Quantitative|$1 - \frac{2C_{i,j}}{S_i + S_j}$|
 |Jaccard | Qualitative| $\frac{|A \cap B|}{|A \cup B|}$|
 
