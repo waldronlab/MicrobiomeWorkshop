@@ -10,6 +10,7 @@ vignette: >
   %\VignetteIndexEntry{MicrobiomeWorkshop}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding[utf8]{inputenc}
+  \usepackage[utf8]{inputenc}
 ---
 
 ```{r, include=FALSE, cache=FALSE}
@@ -17,6 +18,7 @@ knitr::opts_chunk$set(
   echo = TRUE,
   cache = TRUE,
   collapse = TRUE,
+  warning = FALSE,
   comment = "#>"
 )
 ```
@@ -301,6 +303,19 @@ knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "
 - Novel longitudinal and multi-omics models have not yet been throughly explored
 - Data structure gives many opportunities for statistical models development and data exploration 
 
+# Metadata (MOMS-PI) [``dbGap"](https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=phs001523.v1.p1#authorized-requests-section)
+
+
+
+```{r, out.width = '60%', out.height= '40%', results='hold', echo = FALSE}
+knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "dbGap.jpeg"))
+```
+
+
+```{r, out.width = '60%', out.height= '40%', results='hold', echo = FALSE}
+knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "dbGap2.jpeg"))
+```
+
 
 ##### 16S data 
 
@@ -364,16 +379,13 @@ momspiCyto
 
 * Fecal microbiome study 3 groups: Crohn’s disease, ulcerative colitis and controls
 
-* Follow subjects for 1 year 
-
-* Data available at 
-
-https://ibdmdb.org/tunnel/public/summary.html
+* Data from  https://ibdmdb.org/tunnel/public/summary.html
 
 
-```{r, out.width = '100%', out.height= '70%', results='hold', echo = FALSE}
+```{r, out.width = '50%', out.height= '20%', results='hold', echo = FALSE}
 knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "IBD.jpeg"))
 ```
+
 
 Load 16S data as a matrix, rows are SILVA IDs, columns are sample names:
 
@@ -448,7 +460,10 @@ The sample-level annotation data contianed in `HMP2Data` can be summarized using
 
 
 ```{r}
-list("MOMS-PI 16S" = momspi16S_phyloseq, "MOMS-PI Cytokines" = momspiCyto, "IBD 16S" = IBD, "T2D 16S" = T2D) %>% table_two()
+list("MOMS-PI 16S" = momspi16S_phyloseq, "MOMS-PI Cytokines" = momspiCyto, "IBD 16S" = IBD, "T2D 16S" = T2D) %>% 
+  table_two()%>%
+  kable_styling("striped", full_width = F, font_size = 12)
+
 ```
 
 
@@ -457,18 +472,22 @@ list("MOMS-PI 16S" = momspi16S_phyloseq, "MOMS-PI Cytokines" = momspiCyto, "IBD 
 We can plot the histogram of the number of samples at each visit for all studies. 
 Note that the X-axis is capped at count of 40 for better visualization.
 
-```{r, fig.height=4, fig.width=7}
+```{r, fig.height=6, fig.width=10}
 # make data.frame for plotting
-plot_visits <- data.frame(study = c(rep("MOMS-PI Cytokines", nrow(momspiCyto_samp)),
+plot_visits <- data.frame(study = c(rep("MOMS-PI 16S", nrow(momspi16S_samp)),
+                     rep("MOMS-PI Cytokines", nrow(momspiCyto_samp)),
                      rep("IBD 16S", nrow(IBD16S_samp)),
                      rep("T2D 16S", nrow(T2D16S_samp))),
-          visits = c(momspiCyto_samp$visit_number,
+          visits = c(momspi16S_samp$visit_number,
+                     momspiCyto_samp$visit_number,
                      IBD16S_samp$visit_number,
                      T2D16S_samp$visit_number))
 p2 <- ggplot(plot_visits, aes(x = visits, fill = study)) + 
-  geom_histogram(position = "dodge", alpha = 0.7, bins = 30, color = "#00BFC4") + xlim(c(0, 40)) +
+  geom_histogram(position = "dodge", alpha = 0.7, bins = 30, color = "darkgray") + xlim(c(0, 40)) +
   theme(legend.position = c(0.8, 0.8))  + 
-  xlab("Visit number") + ylab("Count")
+  scale_fill_manual(values=c("blue", "yellow", 
+                             "seagreen3", "red"))+
+  xlab("Visit number") + ylab("Count")+theme_bw()
 p2
 ```
 
@@ -558,22 +577,25 @@ stratified = tableone::CreateTableOne(
 stratified <- print(stratified, printToggle = FALSE, showAllLevels = FALSE)
 stratified[,!(colnames(stratified) %in% "test")]%>%
   knitr::kable(format = "html", caption = "Characteristics of the Study Cohort",
-               col.names = c("CD", "nonIBD", 
-                             "UC", "p-value"))%>% 
+               col.names = c(col.names = c("Crohn’s disease \n(CD)", "Control", 
+                             "Ulcerative colitis  \n(UC)", "p-value")))%>% 
   kable_styling("striped", full_width = T)
 
 ```
 
 
-###Alpha diversity analysis 
+### Alpha diversity analysis 
 
 #### Alpha Diversity Definitions 
 
 Alpha diversity is a within-sample diversity measurement that models the richness and/or eveness of the microbial community. 
-<!--
-![Intuitive explanation of alpha, beta and Gamma diversity.](diversity.png)
-(picture by https://socratic.org/users/kate)
---->
+
+
+```{r, out.width = '70%', out.height= '60%', results='hold', echo = FALSE}
+knitr::include_graphics(system.file(package='MicrobiomeWorkshop', 'vignettes', "diversity.png"))
+```
+
+
 Different alpha diversities emphasize different aspect of the community. Commonly used alpha diversities include: 
 
 
@@ -591,7 +613,7 @@ Of course, the alpha diversity measurement is impacted by the sequencing depth (
 
 We can use "plot_richness" from phyloseq package to plot the alpha diversities. 
 
-```{r}
+```{r, fig.height=6, fig.width=10}
 IBD %<>%
   taxa_sums() %>%
   is_greater_than(0) %>%
@@ -623,15 +645,15 @@ List of the commonly used beta-diversities:
 
 | Diversity        |Description           |Formula| 
 | ------------- |:-------------:|:-----:|
-|UniFrac   |Qualitative, Phylogenetics-based |$\sum_{i=1}^n\frac{b_i|I(p_i^A > 0)-I(p_i^B > 0)|}{\sum_{i=1}^n b_i}$ | 
-|Weighted UniFrac     |Quantitative,Phylogenetics-based|$\frac{\sum_{i=1}^n b_i|p_i^A - p_i^B|}{\sum_{i=1}^nb_i(p_i^A + p_i^B)}$   |
+|UniFrac   |Qualitative, Phylogenetics-based |$\sum^n_{i=1} \frac{b_i|I(p_i^A > 0)-I(p_i^B > 0)|}{\sum_{i=1}^n b_i}$ | 
+|Weighted UniFrac     |Quantitative,Phylogenetics-based|$\frac{\sum_{i=1}^n b_i|p_i^A - p_i^B|}{\sum_{i=1}^n b_i(p_i^A + p_i^B)}$   |
 |Generalized UniFrac |Compromise between the previous two |$\frac{\sum_{i=1}^n b_i (p_i^A + p_i^B)^{\alpha} |\frac{p_i^A - p_i^B}{p_i^A + p_i^B}|} {\sum_{i=1}^nb_i(p_i^A + p_i^B)^{\alpha}}$ |
 |Bray-Curtis|Quantitative|$1 - \frac{2C_{i,j}}{S_i + S_j}$|
 |Jaccard | Qualitative| $\frac{|A \cap B|}{|A \cup B|}$|
 
 #### Comparing Beta Diversities between Groups
 
-```{r, warning =F}
+```{r, warning =F, fig.height=6, fig.width=10}
 
 par(mfrow = c(1,2))
 jac <- as.matrix(distance(t(otu_table(IBD)), method = "jaccard"))
@@ -647,7 +669,7 @@ box()
 ```
 
 
-#####Permutational Multivariate Analysis of Variance
+##### Permutational Multivariate Analysis of Variance
 
 Permutational multivariate analysis of variance (PERMANOVA) [@McArdle2001Fit], a non-parametric multivariate statistical test, is one commonly used for assessing the association between microbiome community and a phenotype (e.g., IBD or not). 
 
@@ -751,7 +773,7 @@ dim(combined_Cyto_mtx)
 ```
 
 
-In 'combined_samp' object the names of matched files names for 16S data are recorded in column 'file.x' and for cytokines data in column 'file.y'. 
+In `combined_samp` object the names of matched files names for 16S data are recorded in column `file.x` and for cytokines data in column `file.y`. 
 
 
 
@@ -788,13 +810,12 @@ rownames(combined_16S_mtx) <- substr(
   rownames(combined_16S_mtx), 1,nchar(rownames(combined_16S_mtx))-5)
 
 #make sure all rownames match
-all(rownames(combined_16S_mtx) == rownames(combined_16S_mtx))
+#all(rownames(combined_16S_mtx) == rownames(combined_16S_mtx))
 ```
 
 
 ### Co-inertia analysis
 
-Basics:
 
 1. Let $X$ and $Y$ be 16S and cytokines tables respectively
 2. Rows: same $n$ women at first visit
@@ -837,7 +858,7 @@ cyto.pca <- ade4::dudi.pca(cyto_mtx, scannf=FALSE, nf =61,
 
 ### Combine the tables using co-inertia
 
-Co-inertia is available through R package ade4. It takes ade4 PCA objects and performes joint eigendecomposition. 
+Co-inertia is available through R package `ade4`. It takes `ade4` PCA objects and performes joint eigendecomposition. 
 
 ```{r, echo = TRUE}
 coin <- ade4::coinertia(taxa.pca, cyto.pca, scannf = FALSE, nf = 2)
@@ -976,7 +997,7 @@ df <- cbind(df1, df2)
 ```
 
 
-### Examine these taxa and cytokines
+### Visualization of taxa and cytokines
 
 ```{r, echo=FALSE}
 #select cytokines from the same samples
